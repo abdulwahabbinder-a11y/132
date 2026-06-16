@@ -1,0 +1,72 @@
+version: "3.9"
+
+# ============================================================================
+# AI Documentary Video Generator — full local stack
+# ============================================================================
+#   docker compose up --build
+# Services:
+#   * api        — FastAPI REST API (port 8000)
+#   * worker     — Celery worker for the video pipeline
+#   * redis      — broker + result backend
+#   * frontend   — Next.js app (port 3000)
+#   * remotion   — Remotion Studio for visual iteration (port 3030)
+# ============================================================================
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build:
+      context: ./backend
+    env_file: ./backend/.env
+    ports:
+      - "8000:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - storage_data:/app/storage
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  worker:
+    build:
+      context: ./backend
+    env_file: ./backend/.env
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - storage_data:/app/storage
+    command: celery -A app.workers.celery_app.celery_app worker --loglevel=info --concurrency=2
+
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    env_file: ./frontend/.env
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+    command: sh -c "npm install && npm run dev"
+
+  remotion:
+    image: node:20-alpine
+    working_dir: /app
+    ports:
+      - "3030:3000"
+    volumes:
+      - ./remotion:/app
+    command: sh -c "npm install && npm run dev -- --port 3000 --host 0.0.0.0"
+
+volumes:
+  storage_data:
