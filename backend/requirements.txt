@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+python-dotenv
+httpx
+stripe
+python-jose[cryptography]
+tenacity
+aiofiles
+orjson

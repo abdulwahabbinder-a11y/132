@@ -1,0 +1,22 @@
+{
+  "name": "ai-documentary-video-generator",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Subscription-based AI documentary video generator SaaS.",
+  "workspaces": [
+    "apps/web",
+    "apps/remotion"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace apps/web",
+    "dev:web": "npm run dev --workspace apps/web",
+    "dev:remotion": "npm run preview --workspace apps/remotion",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "render:sample": "npm run render --workspace apps/remotion"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}
