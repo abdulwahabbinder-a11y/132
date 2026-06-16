@@ -62,8 +62,11 @@ docker-compose up --build
 ```
 
 - Frontend: http://localhost:3000
-- Backend API: http://localhost:8000
-- API docs: http://localhost:8000/docs
+- Backend API: http://localhost:8080
+- API docs: http://localhost:8080/docs
+
+> **Production Docker:** use `docker compose up frontend` (built image).
+> **Dev with hot reload:** use `docker compose up frontend-dev`.
 
 ### 4. Local development (without Docker)
 
@@ -82,10 +85,17 @@ celery -A app.workers.background.celery_app worker --loglevel=info
 
 **Frontend:**
 ```bash
+# Easiest — kills stale servers and starts on http://localhost:3000
+bash scripts/start-frontend.sh
+
+# Or manually:
 cd frontend
 npm install
 npm run dev
 ```
+
+> If the page loads blank/unstyled, stop all Next.js processes (`pkill -f next`) and restart.
+> Running `npm run dev` and `npm run start` at the same time breaks static assets.
 
 **Remotion studio:**
 ```bash
