@@ -1,0 +1,46 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: docu-ai-postgres
+    environment:
+      POSTGRES_DB: docu_ai
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: docu-ai-redis
+    ports:
+      - "6379:6379"
+
+  backend:
+    build:
+      context: ./backend
+    container_name: docu-ai-backend
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: docu-ai-frontend
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
