@@ -33,7 +33,7 @@ export function Hero() {
           </p>
 
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link href="/dashboard" className="btn-primary gap-2 text-base">
+            <Link href="/create" className="btn-primary gap-2 text-base">
               <Play className="h-5 w-5" />
               Start Creating
             </Link>

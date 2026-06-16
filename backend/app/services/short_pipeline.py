@@ -9,10 +9,10 @@ from typing import Any
 from app.config import get_settings
 from app.database import get_supabase
 from app.schemas.short import ViralScript
+from app.services.llm.claude_client import ClaudeClient
 from app.services.llm.viral_script import ViralScriptGenerator
 from app.services.media.flux import FluxImageGenerator
-from app.services.scrapers.jina import JinaScraper
-from app.services.scrapers.tavily import TavilyScraper
+from app.services.scrapers.aggregator import ResearchAggregator
 from app.services.settings_service import get_platform_setting
 from app.services.video.elevenlabs import ElevenLabsService
 from app.services.video.ffmpeg_processor import FFmpegProcessor
@@ -31,8 +31,8 @@ class ShortVideoPipeline:
         self.work_dir.mkdir(parents=True, exist_ok=True)
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
-        self.tavily = TavilyScraper()
-        self.jina = JinaScraper()
+        self.aggregator = ResearchAggregator(log_fn=self._log)
+        self.claude = ClaudeClient()
         self.script_gen = ViralScriptGenerator()
         self.flux = FluxImageGenerator()
         self.ffmpeg = FFmpegProcessor()
@@ -41,18 +41,37 @@ class ShortVideoPipeline:
         try:
             # Phase 1: Web scraping
             self._set_phase("scraping", 5)
-            self._log("scraping", "Starting live web research via Tavily...", 5)
+            self._log("scraping", "Starting multi-source live research (all enabled scrapers)...", 5)
             scraped = await self._scrape_live_data(topic)
-            self._log("scraping", f"Collected {len(scraped.get('sources', []))} data sources", 20)
+            self._log("scraping", f"Collected data from {scraped.get('source_count', 0)} sources", 22)
             self._update_job(scraped_data=scraped)
 
-            # Phase 2: Script generation
+            # Phase 2: Research synthesis + script generation
             self._set_phase("scripting", 25)
-            self._log("scripting", "Generating viral script with Llama 3.1...", 25)
+            research_brief = None
+            research_llm = get_platform_setting("research_llm", "claude")
+
+            if research_llm == "claude" and get_platform_setting("claude_api_key"):
+                self._log("scripting", "Claude AI synthesizing research brief from all sources...", 26)
+                try:
+                    research_brief = await self.claude.research_synthesis(
+                        topic, scraped.get("combined_text", "")
+                    )
+                    self._log(
+                        "scripting",
+                        f"Research brief ready — {len(research_brief.get('key_facts', []))} key facts, hook angles identified",
+                        32,
+                    )
+                except Exception as exc:
+                    self._log("scripting", f"Claude research skipped: {exc}", 30, "warn")
+
+            script_llm = get_platform_setting("script_llm", "claude_then_llama")
+            self._log("scripting", f"Generating viral script ({script_llm})...", 34)
             script = await self.script_gen.generate(
                 topic=topic,
                 scraped_text=scraped.get("combined_text", ""),
                 target_duration_seconds=target_duration_seconds,
+                research_brief=research_brief,
             )
             self._log("scripting", f"Script ready: {len(script.scenes)} scenes, hook: \"{script.hook[:50]}...\"", 40)
             self._update_job(script_json=script.model_dump())
@@ -80,34 +99,7 @@ class ShortVideoPipeline:
             raise
 
     async def _scrape_live_data(self, topic: str) -> dict[str, Any]:
-        combined_parts: list[str] = []
-        sources: list[str] = []
-
-        try:
-            tavily_data = await self.tavily.scrape_topic(topic)
-            combined_parts.append(tavily_data.get("combined_text", ""))
-            sources.append("tavily")
-            self._log("scraping", f"Tavily: found {len(tavily_data.get('results', []))} articles", 12)
-        except Exception as exc:
-            self._log("scraping", f"Tavily unavailable: {exc}", 10, "warn")
-
-        try:
-            jina_data = await self.jina.scrape_topic(topic)
-            combined_parts.append(jina_data.get("combined_text", ""))
-            sources.append("jina")
-            self._log("scraping", f"Jina AI: read {len(jina_data.get('pages', []))} live pages", 18)
-        except Exception as exc:
-            self._log("scraping", f"Jina unavailable: {exc}", 15, "warn")
-
-        if not combined_parts:
-            raise ValueError("Web scraping failed. Configure Tavily or Jina API keys in Admin Dashboard.")
-
-        return {
-            "topic": topic,
-            "sources": sources,
-            "combined_text": "\n\n".join(combined_parts),
-            "scraped_at": datetime.now(timezone.utc).isoformat(),
-        }
+        return await self.aggregator.scrape_all(topic)
 
     async def _generate_assets(self, script: ViralScript) -> list[dict[str, Any]]:
         elevenlabs = ElevenLabsService()

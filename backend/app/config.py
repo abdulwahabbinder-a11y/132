@@ -35,6 +35,12 @@ class Settings(BaseSettings):
     mapbox_access_token: str = ""
     tavily_api_key: str = ""
     jina_api_key: str = ""
+    serper_api_key: str = ""
+    firecrawl_api_key: str = ""
+    exa_api_key: str = ""
+    brave_search_api_key: str = ""
+    newsapi_key: str = ""
+    claude_api_key: str = ""
 
     # Redis / Celery
     redis_url: str = "redis://localhost:6379/0"

@@ -1,6 +1,5 @@
 import logging
 import time
-from functools import lru_cache
 
 from app.config import get_settings
 from app.database import get_supabase
@@ -14,18 +13,37 @@ _cache_loaded_at: float = 0.0
 ENV_FALLBACK_MAP = {
     "tavily_api_key": "tavily_api_key",
     "jina_api_key": "jina_api_key",
+    "serper_api_key": "serper_api_key",
+    "firecrawl_api_key": "firecrawl_api_key",
+    "exa_api_key": "exa_api_key",
+    "brave_search_api_key": "brave_search_api_key",
+    "newsapi_key": "newsapi_key",
+    "google_cse_api_key": "google_cse_api_key",
+    "google_cse_cx": "google_cse_cx",
+    "claude_api_key": "claude_api_key",
     "nvidia_nim_api_key": "nvidia_nim_api_key",
     "elevenlabs_api_key": "elevenlabs_api_key",
     "elevenlabs_voice_id": "elevenlabs_voice_id",
     "pexels_api_key": "pexels_api_key",
     "pixabay_api_key": "pixabay_api_key",
     "mapbox_access_token": "mapbox_access_token",
-    "tavily_api_key": "tavily_api_key",
-    "jina_api_key": "jina_api_key",
     "stripe_secret_key": "stripe_secret_key",
     "stripe_webhook_secret": "stripe_webhook_secret",
     "stripe_pro_price_id": "stripe_pro_price_id",
 }
+
+SCRAPER_DEFINITIONS = [
+    {"id": "tavily", "toggle": "scraper_tavily_enabled", "key": "tavily_api_key", "label": "Tavily", "requires_key": True},
+    {"id": "jina", "toggle": "scraper_jina_enabled", "key": "jina_api_key", "label": "Jina AI", "requires_key": True},
+    {"id": "serper", "toggle": "scraper_serper_enabled", "key": "serper_api_key", "label": "Serper", "requires_key": True},
+    {"id": "firecrawl", "toggle": "scraper_firecrawl_enabled", "key": "firecrawl_api_key", "label": "Firecrawl", "requires_key": True},
+    {"id": "exa", "toggle": "scraper_exa_enabled", "key": "exa_api_key", "label": "Exa", "requires_key": True},
+    {"id": "brave", "toggle": "scraper_brave_enabled", "key": "brave_search_api_key", "label": "Brave Search", "requires_key": True},
+    {"id": "newsapi", "toggle": "scraper_newsapi_enabled", "key": "newsapi_key", "label": "NewsAPI", "requires_key": True},
+    {"id": "google_cse", "toggle": "scraper_google_cse_enabled", "key": "google_cse_api_key", "label": "Google CSE", "requires_key": True},
+    {"id": "wikipedia", "toggle": "scraper_wikipedia_enabled", "key": None, "label": "Wikipedia/Wikidata", "requires_key": False},
+    {"id": "internet_archive", "toggle": "scraper_internet_archive_enabled", "key": None, "label": "Internet Archive", "requires_key": False},
+]
 
 
 def _load_settings_from_db() -> dict[str, str]:
@@ -36,7 +54,6 @@ def _load_settings_from_db() -> dict[str, str]:
         db_settings = {row["key"]: row["value"] for row in (result.data or [])}
         _cache = db_settings
         _cache_loaded_at = time.time()
-        logger.debug("Loaded %d platform settings from Supabase", len(db_settings))
         return db_settings
     except Exception as exc:
         logger.warning("Failed to load platform settings from DB: %s", exc)
@@ -63,6 +80,23 @@ def get_platform_setting(key: str, default: str = "") -> str:
     return env_value or default
 
 
+def get_scraper_status() -> list[dict]:
+    status = []
+    for scraper in SCRAPER_DEFINITIONS:
+        enabled = get_platform_setting(scraper["toggle"], "true").lower() in ("true", "1", "yes")
+        has_key = True
+        if scraper["requires_key"] and scraper["key"]:
+            has_key = bool(get_platform_setting(scraper["key"]))
+        status.append({
+            "id": scraper["id"],
+            "label": scraper["label"],
+            "enabled": enabled,
+            "configured": has_key,
+            "ready": enabled and (has_key or not scraper["requires_key"]),
+        })
+    return status
+
+
 def get_all_settings_for_admin() -> list[dict]:
     supabase = get_supabase()
     result = (
@@ -85,11 +119,14 @@ def get_all_settings_for_admin() -> list[dict]:
 def update_platform_settings(updates: dict[str, str], updated_by: str) -> None:
     supabase = get_supabase()
     for key, value in updates.items():
-        if not value or value.strip() == "":
+        if value is None:
+            continue
+        stripped = value.strip()
+        if stripped == "" and not key.endswith("_enabled"):
             continue
         supabase.table("platform_settings").update(
             {
-                "value": value.strip(),
+                "value": stripped,
                 "updated_at": "now()",
                 "updated_by": updated_by,
             }

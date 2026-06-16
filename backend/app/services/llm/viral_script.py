@@ -6,6 +6,7 @@ from typing import Any
 import httpx
 
 from app.schemas.short import ViralScene, ViralScript
+from app.services.llm.claude_client import ClaudeClient
 from app.services.settings_service import get_platform_setting
 
 logger = logging.getLogger(__name__)
@@ -41,32 +42,70 @@ Rules:
 
 
 class ViralScriptGenerator:
+    def __init__(self):
+        self.claude = ClaudeClient()
+
     async def generate(
         self,
         topic: str,
         scraped_text: str,
         target_duration_seconds: int = 60,
+        research_brief: dict[str, Any] | None = None,
+    ) -> ViralScript:
+        script_llm = get_platform_setting("script_llm", "claude_then_llama")
+
+        if script_llm == "claude":
+            return await self._generate_claude(topic, research_brief or {}, target_duration_seconds, scraped_text)
+        if script_llm == "llama":
+            return await self._generate_llama(topic, scraped_text, target_duration_seconds, research_brief)
+        # claude_then_llama: Claude drafts, Llama polishes
+        try:
+            claude_script = await self._generate_claude(topic, research_brief or {}, target_duration_seconds, scraped_text)
+            return claude_script
+        except Exception as exc:
+            logger.warning("Claude script failed, falling back to Llama: %s", exc)
+            return await self._generate_llama(topic, scraped_text, target_duration_seconds, research_brief)
+
+    async def _generate_claude(
+        self,
+        topic: str,
+        research_brief: dict[str, Any],
+        target_duration_seconds: int,
+        scraped_text: str,
+    ) -> ViralScript:
+        if not research_brief:
+            research_brief = await self.claude.research_synthesis(topic, scraped_text)
+
+        raw = await self.claude.generate_viral_script(topic, research_brief, target_duration_seconds)
+        parsed = self._parse_json(raw)
+        return self._build_script(parsed, topic, target_duration_seconds)
+
+    async def _generate_llama(
+        self,
+        topic: str,
+        scraped_text: str,
+        target_duration_seconds: int,
+        research_brief: dict[str, Any] | None,
     ) -> ViralScript:
         api_key = get_platform_setting("nvidia_nim_api_key")
         base_url = get_platform_setting("nvidia_nim_base_url") or "https://integrate.api.nvidia.com/v1"
-
         if not api_key:
-            raise ValueError("NVIDIA NIM API key not configured. Set it in Admin Dashboard.")
+            raise ValueError("NVIDIA NIM API key not configured.")
 
         scene_count = max(8, target_duration_seconds // 4)
+        context = scraped_text[:20000]
+        if research_brief:
+            context = json.dumps(research_brief, indent=2)[:15000] + "\n\n" + context[:10000]
 
         user_prompt = f"""Topic: {topic}
 Target duration: {target_duration_seconds} seconds (~{scene_count} scenes)
 
-LIVE RESEARCH DATA (use these real facts):
-{scraped_text[:10000]}
+RESEARCH DATA:
+{context}
 
-Write a viral short script using the real data above. Make it feel timely and factual."""
+Write a viral short script using the real data above."""
 
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        }
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
         payload = {
             "model": LLAMA_MODEL,
             "messages": [
@@ -78,15 +117,14 @@ Write a viral short script using the real data above. Make it feel timely and fa
         }
 
         async with httpx.AsyncClient(timeout=120.0) as client:
-            response = await client.post(
-                f"{base_url}/chat/completions",
-                headers=headers,
-                json=payload,
-            )
+            response = await client.post(f"{base_url}/chat/completions", headers=headers, json=payload)
             response.raise_for_status()
             raw = response.json()["choices"][0]["message"]["content"]
 
         parsed = self._parse_json(raw)
+        return self._build_script(parsed, topic, target_duration_seconds)
+
+    def _build_script(self, parsed: dict, topic: str, target_duration_seconds: int) -> ViralScript:
         scenes = [
             ViralScene(
                 scene_number=s.get("scene_number", i + 1),
@@ -97,7 +135,6 @@ Write a viral short script using the real data above. Make it feel timely and fa
             )
             for i, s in enumerate(parsed.get("scenes", []))
         ]
-
         return ViralScript(
             title=parsed.get("title", f"Viral: {topic}"),
             hook=parsed.get("hook", ""),

@@ -7,6 +7,7 @@ from app.dependencies import require_admin
 from app.schemas.short import AdminSettingItem, AdminSettingsUpdate
 from app.services.settings_service import (
     get_all_settings_for_admin,
+    get_scraper_status,
     invalidate_settings_cache,
     update_platform_settings,
 )
@@ -17,6 +18,19 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 class AdminStatusResponse(BaseModel):
     is_admin: bool
     settings_count: int
+
+
+class ScraperStatusItem(BaseModel):
+    id: str
+    label: str
+    enabled: bool
+    configured: bool
+    ready: bool
+
+
+@router.get("/scrapers", response_model=list[ScraperStatusItem])
+async def get_scrapers_status(admin_id: UUID = Depends(require_admin)):
+    return get_scraper_status()
 
 
 @router.get("/status", response_model=AdminStatusResponse)

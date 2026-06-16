@@ -25,8 +25,8 @@ export function Navbar() {
           <Link href="/shorts/wizard" className="text-sm text-white/70 hover:text-white">
             Viral Shorts
           </Link>
-          <Link href="/dashboard" className="text-sm text-white/70 hover:text-white">
-            Dashboard
+          <Link href="/create" className="btn-primary text-sm">
+            Create Video
           </Link>
         </div>
 
@@ -48,11 +48,8 @@ export function Navbar() {
             <Link href="#pricing" onClick={() => setOpen(false)}>
               Pricing
             </Link>
-          <Link href="/shorts/wizard" onClick={() => setOpen(false)}>
-            Viral Shorts
-          </Link>
-          <Link href="/dashboard" onClick={() => setOpen(false)}>
-            Dashboard
+          <Link href="/create" onClick={() => setOpen(false)} className="btn-primary text-center">
+            Create Video
           </Link>
           </div>
         </div>

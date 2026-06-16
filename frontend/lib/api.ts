@@ -122,6 +122,33 @@ export class ApiClient {
     >(`/shorts/${jobId}/logs`);
   }
 
+  async listShortJobs() {
+    return this.request<
+      Array<{
+        job_id: string;
+        topic: string;
+        status: string;
+        phase: string;
+        progress: number;
+        output_url: string | null;
+        error: string | null;
+        created_at: string | null;
+      }>
+    >("/shorts");
+  }
+
+  async getScraperStatus() {
+    return this.request<
+      Array<{
+        id: string;
+        label: string;
+        enabled: boolean;
+        configured: boolean;
+        ready: boolean;
+      }>
+    >("/admin/scrapers");
+  }
+
   async getAdminSettings() {
     return this.request<
       Array<{
