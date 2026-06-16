@@ -13,6 +13,10 @@ htmlcov/
 .gitignore
 .env
 .env.*
+!.env.example
 *.md
 Dockerfile
 .dockerignore
+.gcloudignore
+tests/
+.mypy_cache/

@@ -104,6 +104,21 @@ npm install
 npm start
 ```
 
+## Docker (Google Cloud / local)
+
+Production Dockerfiles: `frontend/Dockerfile` + `backend/Dockerfile`
+
+```bash
+# Test full stack locally
+cp .env.example .env   # fill in keys
+docker compose -f docker-compose.prod.yml up --build
+
+# Or build images only
+bash scripts/docker-build.sh
+```
+
+Full guide: **[deploy/DOCKER.md](deploy/DOCKER.md)** | GCP deploy: **[deploy/gcp/DEPLOY.md](deploy/gcp/DEPLOY.md)**
+
 ## API Endpoints
 
 | Method | Endpoint | Description |
