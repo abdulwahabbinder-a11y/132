@@ -1,78 +1,94 @@
 import {
-  Brain,
-  Clapperboard,
-  Globe,
-  Mic,
-  Scan,
-  Wand2,
+  Brain, Globe, Scan, Mic, Clapperboard, Wand2,
+  Subtitles, Map, Shield, Layers,
 } from "lucide-react";
 
 const features = [
   {
-    icon: Brain,
-    title: "AI Script Engine",
-    description:
-      "Llama 3.1 and Qwen 2.5 generate chronological documentary scripts with scene metadata, character flags, and map coordinates.",
+    icon: Globe,
+    title: "10+ Live Data Scrapers",
+    description: "Parallel web research from Tavily, Jina AI, Serper, Firecrawl, Exa, Brave Search, NewsAPI, Google CSE, Wikipedia, and Internet Archive.",
+    bullets: ["Up to 50,000 chars per job", "Admin toggle per source", "Automatic failover"],
   },
   {
-    icon: Globe,
-    title: "Public Data Scraping",
-    description:
-      "Automatic asset fetching from Wikipedia, Wikimedia Commons, Internet Archive, Pexels, and Pixabay for verifiable, real-world footage.",
+    icon: Brain,
+    title: "Dual AI Script Engine",
+    description: "Claude Sonnet synthesizes research briefs. Llama 3.1 70B (English) and Qwen 2.5 72B (Hindi/Urdu) write scene-by-scene viral scripts.",
+    bullets: ["Research brief with key facts", "Hook angle identification", "Chronological scene JSON"],
+  },
+  {
+    icon: Mic,
+    title: "ElevenLabs Pro Narration",
+    description: "Multilingual v2 voice model with character-level word timestamps. Enables precise subtitle burn-in and audio ducking during narration.",
+    bullets: ["29+ languages", "Word-level timestamps", "Custom voice ID support"],
+  },
+  {
+    icon: Wand2,
+    title: "Flux AI Visual Generation",
+    description: "Photorealistic 1080×1920 vertical images for abstract scenes. Wan2.1 animates static images into 4-second cinematic motion clips.",
+    bullets: ["NVIDIA NIM Flux 1-dev", "Vertical-optimized prompts", "Ken Burns + motion"],
   },
   {
     icon: Scan,
     title: "Character Cinematics",
-    description:
-      "DeepVideo-V1 and LivePortrait deliver lip-synced historical characters with neural rendering, micro-expressions, and temporal consistency.",
-  },
-  {
-    icon: Mic,
-    title: "ElevenLabs Narration",
-    description:
-      "Professional voice synthesis with character-level word timestamps for precise subtitle burn-in and audio ducking.",
+    description: "LivePortrait delivers precise lip-sync for historical figures. DeepVideo-V1 adds micro-expressions, temporal consistency, and anti-flicker rendering.",
+    bullets: ["LivePortrait lip-sync", "DeepVideo-V1 enhancement", "1080p neural rendering"],
   },
   {
     icon: Clapperboard,
-    title: "Remotion Assembly",
-    description:
-      "Remotion.dev orchestrates scene clips, Motion.dev transitions, animated Mapbox maps, and FFmpeg post-processing into 21:9 MP4.",
+    title: "Remotion Video Assembly",
+    description: "Remotion.dev orchestrates scene clips with Motion.dev spring transitions. Animated Mapbox map sequences from script coordinates.",
+    bullets: ["Procedural transitions", "Geopolitical map overlays", "Multi-layer timeline"],
   },
   {
-    icon: Wand2,
-    title: "Flux & Wan2.1 Animation",
-    description:
-      "Abstract scenes get photorealistic Flux images animated into 4-second cinematic clips via AnyFlow-Wan2.1-T2V-14B.",
+    icon: Subtitles,
+    title: "Auto Subtitle Burn-In",
+    description: "FFmpeg processes ElevenLabs word timestamps into center-bottom aligned SRT subtitles, burned directly into the final MP4 export.",
+    bullets: ["Word-level sync", "Center-bottom alignment", "Karaoke-style highlight"],
+  },
+  {
+    icon: Map,
+    title: "Animated Map Sequences",
+    description: "Mapbox and OpenStreetMap integration renders dynamic zoom animations for geopolitical and historical documentary sequences.",
+    bullets: ["Lat/lng from script JSON", "Animated zoom transitions", "Location label overlays"],
+  },
+  {
+    icon: Shield,
+    title: "Admin API Control",
+    description: "Supabase-powered settings table stores all API keys. Admin dashboard with scraper status grid, enable toggles, and 60-second cache refresh.",
+    bullets: ["Dynamic key management", "Per-scraper toggles", "No redeploy needed"],
   },
 ];
 
 export function Features() {
   return (
-    <section id="features" className="py-24">
+    <section id="features" className="py-28">
       <div className="mx-auto max-w-6xl px-6">
         <div className="mb-16 text-center">
-          <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-violet-400">
-            Features
-          </p>
-          <h2 className="mb-4 text-3xl font-bold md:text-4xl">
-            Everything You Need to Go Viral
-          </h2>
-          <p className="mx-auto max-w-2xl text-white/50">
-            From live web research to final MP4 — every step automated with production-grade AI.
+          <p className="section-label">Platform Features</p>
+          <h2 className="section-title mb-4">Everything in One Production Pipeline</h2>
+          <p className="section-subtitle">
+            Nine integrated capabilities that replace an entire video production team —
+            researchers, scriptwriters, voice actors, graphic designers, and editors.
           </p>
         </div>
 
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {features.map((feature) => (
-            <div
-              key={feature.title}
-              className="group rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6 transition hover:border-violet-500/30 hover:bg-white/[0.05]"
-            >
-              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-violet-500/15 transition group-hover:bg-violet-500/25">
-                <feature.icon className="h-5 w-5 text-violet-400" />
+          {features.map(({ icon: Icon, title, description, bullets }) => (
+            <div key={title} className="glass-card-hover group p-7">
+              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/5 ring-1 ring-violet-500/15 transition group-hover:ring-violet-500/30">
+                <Icon className="h-5 w-5 text-violet-400" />
               </div>
-              <h3 className="mb-2 font-semibold">{feature.title}</h3>
-              <p className="text-sm leading-relaxed text-white/50">{feature.description}</p>
+              <h3 className="mb-2 font-display text-base font-semibold">{title}</h3>
+              <p className="mb-4 text-sm leading-relaxed text-white/45">{description}</p>
+              <ul className="space-y-1.5 border-t border-white/[0.06] pt-4">
+                {bullets.map((b) => (
+                  <li key={b} className="flex items-center gap-2 text-xs text-white/35">
+                    <Layers className="h-3 w-3 shrink-0 text-violet-500/50" />
+                    {b}
+                  </li>
+                ))}
+              </ul>
             </div>
           ))}
         </div>

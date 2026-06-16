@@ -4,60 +4,57 @@ import Link from "next/link";
 import { useState } from "react";
 import { Clapperboard, Menu, X } from "lucide-react";
 
+const links = [
+  { href: "#how-it-works", label: "How It Works" },
+  { href: "#pipeline", label: "Pipeline" },
+  { href: "#features", label: "Features" },
+  { href: "#pricing", label: "Pricing" },
+  { href: "#faq", label: "FAQ" },
+];
+
 export function Navbar() {
   const [open, setOpen] = useState(false);
 
   return (
-    <nav className="fixed top-0 z-50 w-full border-b border-white/[0.06] bg-[#06060a]/80 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+    <nav className="fixed top-0 z-50 w-full border-b border-white/[0.06] bg-[#050508]/70 backdrop-blur-2xl">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/20">
             <Clapperboard className="h-4 w-4 text-white" />
           </div>
-          <span className="text-base font-bold tracking-tight">DocuForge AI</span>
+          <span className="font-display text-base font-bold tracking-tight">DocuForge</span>
         </Link>
 
-        <div className="hidden items-center gap-8 md:flex">
-          <Link href="#how-it-works" className="text-sm text-white/60 transition hover:text-white">
-            How It Works
-          </Link>
-          <Link href="#features" className="text-sm text-white/60 transition hover:text-white">
-            Features
-          </Link>
-          <Link href="#pricing" className="text-sm text-white/60 transition hover:text-white">
-            Pricing
-          </Link>
-          <Link href="/faq" className="text-sm text-white/60 transition hover:text-white">
-            FAQ
-          </Link>
-          <Link href="/auth/login" className="text-sm text-white/60 transition hover:text-white">
+        <div className="hidden items-center gap-7 md:flex">
+          {links.map(({ href, label }) => (
+            <Link key={href} href={href} className="text-[13px] font-medium text-white/50 transition hover:text-white">
+              {label}
+            </Link>
+          ))}
+        </div>
+
+        <div className="hidden items-center gap-3 md:flex">
+          <Link href="/auth/login" className="text-[13px] font-medium text-white/50 transition hover:text-white">
             Sign In
           </Link>
-          <Link
-            href="/create"
-            className="rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
-          >
-            Create Video
+          <Link href="/create" className="rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-[13px] font-semibold text-white shadow-md shadow-violet-600/20 transition hover:brightness-110">
+            Create Free
           </Link>
         </div>
 
-        <button className="md:hidden" onClick={() => setOpen(!open)} aria-label="Toggle menu">
-          {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+        <button className="md:hidden" onClick={() => setOpen(!open)} aria-label="Menu">
+          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
       </div>
 
       {open && (
-        <div className="border-t border-white/[0.06] px-6 py-4 md:hidden">
-          <div className="flex flex-col gap-4 text-sm">
-            <Link href="#how-it-works" onClick={() => setOpen(false)}>How It Works</Link>
-            <Link href="#features" onClick={() => setOpen(false)}>Features</Link>
-            <Link href="#pricing" onClick={() => setOpen(false)}>Pricing</Link>
-            <Link href="/faq" onClick={() => setOpen(false)}>FAQ</Link>
+        <div className="border-t border-white/[0.06] bg-[#050508]/95 px-6 py-4 backdrop-blur-2xl md:hidden">
+          <div className="flex flex-col gap-3 text-sm">
+            {links.map(({ href, label }) => (
+              <Link key={href} href={href} onClick={() => setOpen(false)}>{label}</Link>
+            ))}
             <Link href="/auth/login" onClick={() => setOpen(false)}>Sign In</Link>
-            <Link href="/create" onClick={() => setOpen(false)}
-              className="rounded-lg bg-violet-600 py-2 text-center font-semibold">
-              Create Video
-            </Link>
+            <Link href="/create" onClick={() => setOpen(false)} className="btn-primary text-center">Create Free</Link>
           </div>
         </div>
       )}

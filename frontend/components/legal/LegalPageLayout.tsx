@@ -11,7 +11,7 @@ interface LegalPageLayoutProps {
 
 export function LegalPageLayout({ title, lastUpdated, children }: LegalPageLayoutProps) {
   return (
-    <main className="min-h-screen bg-surface-950">
+    <main className="min-h-screen bg-[#050508]">
       <Navbar />
       <div className="mx-auto max-w-3xl px-6 pb-20 pt-28">
         <Link
@@ -21,7 +21,7 @@ export function LegalPageLayout({ title, lastUpdated, children }: LegalPageLayou
           <ArrowLeft className="h-4 w-4" />
           Back to Home
         </Link>
-        <h1 className="mb-2 text-4xl font-bold tracking-tight">{title}</h1>
+        <h1 className="font-display mb-2 text-4xl font-bold tracking-tight">{title}</h1>
         <p className="mb-10 text-sm text-white/40">Last updated: {lastUpdated}</p>
         <article className="prose-legal space-y-6 text-white/75">{children}</article>
       </div>
