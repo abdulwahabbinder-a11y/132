@@ -1,0 +1,17 @@
+[project]
+name = "docuforge-backend"
+version = "0.1.0"
+description = "DocuForge AI — FastAPI SaaS engine for AI documentary generation"
+requires-python = ">=3.11"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["B008"]  # FastAPI Depends() in defaults is idiomatic
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

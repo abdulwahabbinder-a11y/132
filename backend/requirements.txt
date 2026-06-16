@@ -1,0 +1,30 @@
+# --- Web framework ---
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+pydantic[email]==2.10.4
+pydantic-settings==2.7.1
+
+# --- Auth / Supabase / DB ---
+supabase==2.11.0
+PyJWT==2.10.1
+
+# --- Background worker ---
+celery==5.4.0
+redis==5.2.1
+
+# --- HTTP / scraping ---
+httpx==0.28.1
+aiohttp==3.11.11
+tenacity==9.0.0
+beautifulsoup4==4.12.3
+
+# --- Billing ---
+stripe==11.4.1
+
+# --- Media / assembly helpers ---
+ffmpeg-python==0.2.0
+
+# --- Tooling ---
+python-dotenv==1.0.1
+loguru==0.7.3
