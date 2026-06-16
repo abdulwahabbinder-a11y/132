@@ -6,12 +6,14 @@ import {
   Film,
   Globe,
   LayoutDashboard,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AdminTabId } from "@/lib/admin/types";
 
 const TAB_ICONS: Record<AdminTabId, typeof Globe> = {
   overview: LayoutDashboard,
+  users: Users,
   scraping: Globe,
   llm: Brain,
   media: Film,

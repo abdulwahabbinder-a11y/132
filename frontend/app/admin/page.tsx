@@ -6,10 +6,12 @@ import { VidrushShell } from "@/components/vidrush/VidrushShell";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { AdminTabs } from "@/components/admin/AdminTabs";
 import { AdminOverview } from "@/components/admin/AdminOverview";
+import { AdminUsersPanel } from "@/components/admin/AdminUsersPanel";
 import { ScraperGrid } from "@/components/admin/ScraperGrid";
 import { SettingsPanel } from "@/components/admin/SettingsPanel";
 import { AdminSaveBar } from "@/components/admin/AdminSaveBar";
 import { useAdminSettings } from "@/hooks/useAdminSettings";
+import { useAdminUsers } from "@/hooks/useAdminUsers";
 import type { AdminTabId } from "@/lib/admin/types";
 import {
   ADMIN_TABS,
@@ -24,7 +26,6 @@ const TAB_HINTS: Partial<Record<AdminTabId, React.ReactNode>> = {
       <p className="text-xs text-white/50">
         <strong className="text-white/70">Claude</strong> handles deep research synthesis.
         <strong className="text-white/70"> Script LLM</strong> controls final viral script generation.
-        Recommended: Claude for research, Claude → Llama for scripts.
       </p>
     </div>
   ),
@@ -61,6 +62,14 @@ export default function AdminPage() {
     getVal,
   } = useAdminSettings();
 
+  const usersEnabled = activeTab === "users" || activeTab === "overview";
+  const {
+    data: usersData,
+    loading: usersLoading,
+    error: usersError,
+    refresh: refreshUsers,
+  } = useAdminUsers(usersEnabled);
+
   const stats = useMemo(
     () => computeAdminStats(settings, scrapers, draft),
     [settings, scrapers, draft]
@@ -73,12 +82,13 @@ export default function AdminPage() {
 
   const tabBadges = useMemo(
     () => ({
+      users: usersData?.summary.total_users ?? "…",
       scraping: `${stats.scrapersReady}/${stats.scrapersTotal}`,
       llm: stats.llmReady ? "✓" : "!",
       media: stats.mediaReady ? "✓" : "!",
       billing: stats.billingReady ? "✓" : "!",
     }),
-    [stats]
+    [stats, usersData]
   );
 
   if (loading) {
@@ -111,7 +121,10 @@ export default function AdminPage() {
           isDemo={isDemo}
           healthScore={stats.healthScore}
           onLogout={handleLogout}
-          onRefresh={discardDraft}
+          onRefresh={() => {
+            discardDraft();
+            refreshUsers();
+          }}
         />
 
         <AdminTabs
@@ -124,7 +137,24 @@ export default function AdminPage() {
           badges={tabBadges}
         />
 
-        {activeTab === "overview" && <AdminOverview stats={stats} />}
+        {activeTab === "overview" && (
+          <AdminOverview
+            stats={stats}
+            usersSummary={usersData?.summary}
+            onViewUsers={() => setActiveTab("users")}
+          />
+        )}
+
+        {activeTab === "users" && (
+          <AdminUsersPanel
+            summary={usersData?.summary ?? null}
+            users={usersData?.users ?? []}
+            loading={usersLoading}
+            error={usersError}
+            onRefresh={refreshUsers}
+            isDemo={isDemo}
+          />
+        )}
 
         {activeTab === "scraping" && (
           <>
@@ -147,7 +177,9 @@ export default function AdminPage() {
           </>
         )}
 
-        {activeTab !== "overview" && activeTab !== "scraping" && (
+        {activeTab !== "overview" &&
+          activeTab !== "users" &&
+          activeTab !== "scraping" && (
           <SettingsPanel
             title={`${activeTabLabel} — Configuration`}
             settings={tabSettings}

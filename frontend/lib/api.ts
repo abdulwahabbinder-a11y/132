@@ -150,6 +150,39 @@ export class ApiClient {
     >("/shorts");
   }
 
+  async getAdminUsers() {
+    return this.request<{
+      summary: {
+        total_users: number;
+        pro_users: number;
+        free_users: number;
+        total_videos_completed: number;
+        credits_per_video: number;
+      };
+      users: Array<{
+        user_id: string;
+        email: string;
+        full_name: string;
+        plan_type: string;
+        is_admin: boolean;
+        signed_up_at: string | null;
+        credits_remaining: number;
+        credits_used_estimate: number;
+        plan_credits_allocation: number;
+        documentary_jobs: number;
+        documentary_completed: number;
+        short_jobs: number;
+        shorts_completed: number;
+        videos_completed: number;
+        jobs_failed: number;
+        jobs_in_progress: number;
+        last_active_at: string | null;
+        stripe_customer_id?: string | null;
+        billing_cycle_end?: string | null;
+      }>;
+    }>("/admin/users");
+  }
+
   async getScraperStatus() {
     return this.request<
       Array<{

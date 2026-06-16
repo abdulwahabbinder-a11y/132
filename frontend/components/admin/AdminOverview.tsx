@@ -6,17 +6,21 @@ import {
   CheckCircle2,
   Coins,
   CreditCard,
+  Crown,
   Film,
   Globe,
   Key,
+  Users,
   XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { AdminStats } from "@/lib/admin/types";
+import type { AdminStats, AdminUsersSummary } from "@/lib/admin/types";
 import { CREDITS_CONFIG } from "@/lib/admin/utils";
 
 interface AdminOverviewProps {
   stats: AdminStats;
+  usersSummary?: AdminUsersSummary | null;
+  onViewUsers?: () => void;
 }
 
 function StatCard({
@@ -70,12 +74,45 @@ function StatusRow({
   );
 }
 
-export function AdminOverview({ stats }: AdminOverviewProps) {
+export function AdminOverview({ stats, usersSummary, onViewUsers }: AdminOverviewProps) {
   const { creditsPerVideo, freePlanCredits, freePlanVideos, proPlanCredits, proPlanVideos, proPlanPrice } =
     CREDITS_CONFIG;
 
   return (
     <div className="space-y-6">
+      {usersSummary && (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            label="Registered Users"
+            value={usersSummary.total_users}
+            sub={`${usersSummary.pro_users} Pro · ${usersSummary.free_users} Free`}
+            icon={Users}
+            accent="bg-violet-500/15 text-violet-400"
+          />
+          <StatCard
+            label="Pro Subscribers"
+            value={usersSummary.pro_users}
+            sub="Paying customers"
+            icon={Crown}
+            accent="bg-amber-500/15 text-amber-400"
+          />
+          <StatCard
+            label="Total Videos Made"
+            value={usersSummary.total_videos_completed}
+            sub="Across all users"
+            icon={Film}
+            accent="bg-emerald-500/15 text-emerald-400"
+          />
+          <StatCard
+            label="Credits / Video"
+            value={usersSummary.credits_per_video}
+            sub="Deduction per render"
+            icon={Coins}
+            accent="bg-blue-500/15 text-blue-400"
+          />
+        </div>
+      )}
+
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="System Health"
@@ -181,20 +218,27 @@ export function AdminOverview({ stats }: AdminOverviewProps) {
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { icon: Globe, title: "Scraping", desc: "Enable sources & add API keys", tab: "scraping" },
-          { icon: Brain, title: "AI / LLM", desc: "Claude key & model routing", tab: "llm" },
-          { icon: Film, title: "Media", desc: "Voice, stock footage, maps", tab: "media" },
-        ].map(({ icon: Icon, title, desc }) => (
-          <div
+          { icon: Users, title: "Users", desc: "Signups, plans & usage", action: onViewUsers },
+          { icon: Globe, title: "Scraping", desc: "Enable sources & add API keys" },
+          { icon: Brain, title: "AI / LLM", desc: "Claude key & model routing" },
+          { icon: Film, title: "Media", desc: "Voice, stock footage, maps" },
+        ].map(({ icon: Icon, title, desc, action }) => (
+          <button
             key={title}
-            className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4"
+            type="button"
+            onClick={action}
+            disabled={!action}
+            className={cn(
+              "rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 text-left transition",
+              action && "hover:border-violet-500/30 hover:bg-violet-500/5 cursor-pointer"
+            )}
           >
             <Icon className="mb-2 h-5 w-5 text-violet-400" />
             <p className="text-sm font-semibold">{title}</p>
             <p className="mt-0.5 text-xs text-white/40">{desc}</p>
-          </div>
+          </button>
         ))}
       </div>
     </div>

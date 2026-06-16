@@ -10,6 +10,7 @@ import type { AdminStats, AdminTabId, ScraperStatus, SettingItem } from "./types
 
 export const ADMIN_TABS: { id: AdminTabId; label: string }[] = [
   { id: "overview", label: "Overview" },
+  { id: "users", label: "Users" },
   { id: "scraping", label: "Scraping" },
   { id: "llm", label: "AI / LLM" },
   { id: "media", label: "Media" },

@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from app.dependencies import require_admin
 from app.schemas.short import AdminSettingItem, AdminSettingsUpdate
+from app.services.admin_users_service import get_admin_users_dashboard
 from app.services.settings_service import (
     get_all_settings_for_admin,
     get_scraper_status,
@@ -26,6 +27,47 @@ class ScraperStatusItem(BaseModel):
     enabled: bool
     configured: bool
     ready: bool
+
+
+class AdminUserRow(BaseModel):
+    user_id: str
+    email: str
+    full_name: str
+    plan_type: str
+    is_admin: bool
+    signed_up_at: str | None
+    credits_remaining: int
+    credits_used_estimate: int
+    plan_credits_allocation: int
+    documentary_jobs: int
+    documentary_completed: int
+    short_jobs: int
+    shorts_completed: int
+    videos_completed: int
+    jobs_failed: int
+    jobs_in_progress: int
+    last_active_at: str | None
+    stripe_customer_id: str | None = None
+    billing_cycle_end: str | None = None
+
+
+class AdminUsersSummary(BaseModel):
+    total_users: int
+    pro_users: int
+    free_users: int
+    total_videos_completed: int
+    credits_per_video: int
+
+
+class AdminUsersResponse(BaseModel):
+    summary: AdminUsersSummary
+    users: list[AdminUserRow]
+
+
+@router.get("/users", response_model=AdminUsersResponse)
+async def list_users(admin_id: UUID = Depends(require_admin)):
+    data = get_admin_users_dashboard()
+    return data
 
 
 @router.get("/scrapers", response_model=list[ScraperStatusItem])
