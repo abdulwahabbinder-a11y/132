@@ -12,8 +12,9 @@ pkill -f "next start" 2>/dev/null || true
 pkill -f "next-server" 2>/dev/null || true
 sleep 2
 
-echo "==> Building frontend..."
+echo "==> Building frontend (clean)..."
 cd "$ROOT/frontend"
+rm -rf .next
 npm run build
 
 tmux -f /exec-daemon/tmux.portal.conf kill-session -t frontend-live 2>/dev/null || true
@@ -22,8 +23,13 @@ tmux -f /exec-daemon/tmux.portal.conf send-keys -t frontend-live:0.0 "npm run st
 
 echo "==> Waiting for frontend on :${PORT}..."
 for i in $(seq 1 30); do
-  if curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${PORT}/" | rg -q '^200$'; then
-    break
+  page_code=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${PORT}/auth/login" || echo "000")
+  css_path=$(curl -s "http://127.0.0.1:${PORT}/auth/login" | rg -o '/_next/static/css/[^"]+\.css' | head -1 || true)
+  if [[ "$page_code" == "200" && -n "$css_path" ]]; then
+    css_code=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${PORT}${css_path}" || echo "000")
+    if [[ "$css_code" == "200" ]]; then
+      break
+    fi
   fi
   sleep 1
 done
@@ -40,8 +46,13 @@ for i in $(seq 1 45); do
   URL=$(rg -o 'https://[a-zA-Z0-9-]+\.trycloudflare\.com' "$LOG" 2>/dev/null | head -1 || true)
   if [[ -n "$URL" ]]; then
     sleep 4
-    code=$(curl -sL -o /dev/null -w "%{http_code}" --max-time 20 "${URL}/" || echo "000")
-    if [[ "$code" == "200" ]]; then
+    page_code=$(curl -sL -o /dev/null -w "%{http_code}" --max-time 20 "${URL}/auth/login" || echo "000")
+    css_path=$(curl -sL --max-time 20 "${URL}/auth/login" | rg -o '/_next/static/css/[^"]+\.css' | head -1 || true)
+    css_code="000"
+    if [[ -n "$css_path" ]]; then
+      css_code=$(curl -sL -o /dev/null -w "%{http_code}" --max-time 20 "${URL}${css_path}" || echo "000")
+    fi
+    if [[ "$page_code" == "200" && "$css_code" == "200" ]]; then
       break
     fi
   fi
