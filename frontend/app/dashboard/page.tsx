@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { api } from "@/lib/api";
 import { clearDemoSession, getDemoSession, isDemoUserSession } from "@/lib/demo-auth";
 import { DEMO_USER_SUBSCRIPTION } from "@/lib/demo-data";
+import { useSupabaseSession } from "@/hooks/useSupabaseSession";
 import { VideoGenerator } from "@/components/dashboard/VideoGenerator";
 import { JobList } from "@/components/dashboard/JobList";
 import { SubscriptionCard } from "@/components/dashboard/SubscriptionCard";
@@ -27,8 +28,11 @@ function DashboardContent() {
   const [checkoutMsg, setCheckoutMsg] = useState<string | null>(null);
 
   const [isDemo, setIsDemo] = useState(false);
+  const { session, loading: authLoading } = useSupabaseSession();
 
   useEffect(() => {
+    if (authLoading) return;
+
     async function load() {
       const demoSession = getDemoSession();
       if (demoSession?.role === "user") {
@@ -43,9 +47,6 @@ function DashboardContent() {
         window.location.href = "/admin";
         return;
       }
-
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
 
       if (!session) {
         window.location.href = "/auth/login?redirect=/dashboard";
@@ -68,7 +69,7 @@ function DashboardContent() {
       }
     }
     load();
-  }, [refreshKey, searchParams]);
+  }, [authLoading, session, refreshKey, searchParams]);
 
   const handleSignOut = async () => {
     if (isDemoUserSession()) {
@@ -86,7 +87,7 @@ function DashboardContent() {
     setRefreshKey((k) => k + 1);
   };
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />

@@ -1,7 +1,6 @@
 import asyncio
 import json
 import logging
-import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -231,25 +230,25 @@ class ShortVideoPipeline:
         for asset in scene_assets:
             clip = concat_dir / f"clip_{asset['scene_number']}.mp4"
             duration = asset["duration_seconds"]
-            subprocess.run([
+            self.ffmpeg.run([
                 "ffmpeg", "-y",
-                "-loop", "1", "-i", asset["image_path"],
-                "-i", asset["audio_path"],
+                "-loop", "1", "-i", str(Path(asset["image_path"]).resolve()),
+                "-i", str(Path(asset["audio_path"]).resolve()),
                 "-c:v", "libx264", "-t", str(duration),
                 "-pix_fmt", "yuv420p",
                 "-vf", "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2",
                 "-c:a", "aac", "-shortest",
                 str(clip),
-            ], capture_output=True)
+            ], label=f"FFmpeg clip {asset['scene_number']}")
             clip_paths.append(clip)
 
         concat_file = concat_dir / "list.txt"
-        concat_file.write_text("\n".join(f"file '{p.absolute()}'" for p in clip_paths))
+        concat_file.write_text("\n".join(f"file '{p.resolve()}'" for p in clip_paths))
         raw = self.output_dir / "concat_raw.mp4"
-        subprocess.run([
+        self.ffmpeg.run([
             "ffmpeg", "-y", "-f", "concat", "-safe", "0",
             "-i", str(concat_file), "-c", "copy", str(raw),
-        ], capture_output=True)
+        ], label="FFmpeg concat")
 
         self.ffmpeg.burn_subtitles(
             video_path=raw,

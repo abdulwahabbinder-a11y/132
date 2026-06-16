@@ -6,6 +6,7 @@ from typing import Any
 import httpx
 
 from app.config import get_settings
+from app.services.settings_service import get_platform_setting
 
 logger = logging.getLogger(__name__)
 
@@ -23,11 +24,15 @@ class LivePortraitService:
         audio_slice_path: Path,
         output_path: Path,
     ) -> dict[str, Any]:
+        api_key = get_platform_setting("nvidia_nim_api_key")
+        if not api_key:
+            raise ValueError("NVIDIA NIM API key is not configured")
+
         image_b64 = base64.b64encode(portrait_image_path.read_bytes()).decode()
         audio_b64 = base64.b64encode(audio_slice_path.read_bytes()).decode()
 
         headers = {
-            "Authorization": f"Bearer {self.settings.nvidia_nim_api_key}",
+            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         }
 
@@ -39,24 +44,28 @@ class LivePortraitService:
             "head_motion_scale": 0.3,
         }
 
-        async with httpx.AsyncClient(timeout=300.0) as client:
-            response = await client.post(
-                f"{self.base_url}/generate",
-                headers=headers,
-                json=payload,
-            )
-            response.raise_for_status()
-            data = response.json()
+        try:
+            async with httpx.AsyncClient(timeout=300.0) as client:
+                response = await client.post(
+                    f"{self.base_url}/generate",
+                    headers=headers,
+                    json=payload,
+                )
+                response.raise_for_status()
+                data = response.json()
+        except httpx.HTTPError as exc:
+            logger.error("LivePortrait request failed: %s", exc)
+            raise RuntimeError(f"LivePortrait lip-sync failed: {exc}") from exc
 
-            video_b64 = data.get("video") or data.get("output", {}).get("video")
-            if not video_b64 and "artifacts" in data:
-                video_b64 = data["artifacts"][0].get("base64")
+        video_b64 = data.get("video") or data.get("output", {}).get("video")
+        if not video_b64 and "artifacts" in data:
+            video_b64 = data["artifacts"][0].get("base64")
 
-            if not video_b64:
-                raise ValueError("No video in LivePortrait response")
+        if not video_b64:
+            raise ValueError("No video in LivePortrait response")
 
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            output_path.write_bytes(base64.b64decode(video_b64))
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_bytes(base64.b64decode(video_b64))
 
         logger.info("LivePortrait lip-sync output: %s", output_path)
         return {"source": "liveportrait", "local_path": str(output_path)}

@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
 import { api } from "@/lib/api";
+import { getDemoSession } from "@/lib/demo-auth";
+import { DEMO_USER_JOBS } from "@/lib/demo-data";
+import { useSupabaseSession } from "@/hooks/useSupabaseSession";
 import { VidrushShell } from "@/components/vidrush/VidrushShell";
 import { Loader2, Download, Clock, CheckCircle2, XCircle } from "lucide-react";
 
@@ -23,15 +25,36 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const { session, loading: authLoading } = useSupabaseSession();
 
   useEffect(() => {
+    if (authLoading) return;
+
     async function load() {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
+      const demoSession = getDemoSession();
+      if (demoSession) {
+        setProjects(
+          DEMO_USER_JOBS.map((job) => ({
+            job_id: job.job_id,
+            topic: `Documentary · ${job.status}`,
+            status: job.status,
+            phase: job.status,
+            progress: job.progress,
+            output_url: job.output_url,
+            created_at: job.created_at,
+            type: "documentary" as const,
+          }))
+        );
+        setError(null);
+        setLoading(false);
+        return;
+      }
+
       if (!session) {
         window.location.href = "/auth/login?redirect=/projects";
         return;
       }
+
       api.setToken(session.access_token);
       try {
         const [shorts, docs] = await Promise.all([
@@ -76,7 +99,7 @@ export default function ProjectsPage() {
       }
     }
     load();
-  }, []);
+  }, [authLoading, session]);
 
   const handleDownload = async (p: Project) => {
     setDownloadingId(p.job_id);
@@ -118,7 +141,7 @@ export default function ProjectsPage() {
           </p>
         )}
 
-        {loading ? (
+        {loading || authLoading ? (
           <div className="flex justify-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-violet-400" />
           </div>

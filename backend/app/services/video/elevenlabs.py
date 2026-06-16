@@ -1,3 +1,4 @@
+import base64
 import json
 import logging
 from pathlib import Path
@@ -23,6 +24,9 @@ class ElevenLabsService:
         api_key = get_platform_setting("elevenlabs_api_key")
         voice_id = get_platform_setting("elevenlabs_voice_id", "21m00Tcm4TlvDq8ikWAM")
 
+        if not api_key:
+            raise ValueError("ElevenLabs API key is not configured")
+
         headers = {
             "xi-api-key": api_key,
             "Content-Type": "application/json",
@@ -38,27 +42,31 @@ class ElevenLabsService:
             },
         }
 
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            response = await client.post(
-                f"{self.base_url}/text-to-speech/{voice_id}/with-timestamps",
-                headers=headers,
-                json=payload,
-            )
-            response.raise_for_status()
-            data = response.json()
+        try:
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                response = await client.post(
+                    f"{self.base_url}/text-to-speech/{voice_id}/with-timestamps",
+                    headers=headers,
+                    json=payload,
+                )
+                response.raise_for_status()
+                data = response.json()
+        except httpx.HTTPError as exc:
+            logger.error("ElevenLabs request failed: %s", exc)
+            raise RuntimeError(f"ElevenLabs synthesis failed: {exc}") from exc
 
-            audio_b64 = data.get("audio_base64", "")
-            alignment = data.get("alignment", {})
+        audio_b64 = data.get("audio_base64", "")
+        if not audio_b64:
+            raise ValueError("ElevenLabs response did not include audio data")
 
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            import base64
+        alignment = data.get("alignment", {})
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_bytes(base64.b64decode(audio_b64))
 
-            output_path.write_bytes(base64.b64decode(audio_b64))
+        word_timestamps = self._extract_word_timestamps(alignment)
 
-            word_timestamps = self._extract_word_timestamps(alignment)
-
-            if timestamps_path:
-                timestamps_path.write_text(json.dumps(word_timestamps, indent=2))
+        if timestamps_path:
+            timestamps_path.write_text(json.dumps(word_timestamps, indent=2))
 
         logger.info("Synthesized narration (%d words) to %s", len(word_timestamps), output_path)
         return {

@@ -184,13 +184,21 @@ class AssetWorker:
                 None,
             )
             if portrait:
-                result = await self.deepvideo.process_character_scene(
-                    portrait_path=Path(portrait["local_path"]),
-                    audio_path=narration_path,
-                    character_name=scene.character_name,
-                    work_dir=scene_dir / "character",
-                )
-                return Path(result["local_path"])
+                try:
+                    result = await self.deepvideo.process_character_scene(
+                        portrait_path=Path(portrait["local_path"]),
+                        audio_path=narration_path,
+                        character_name=scene.character_name,
+                        work_dir=scene_dir / "character",
+                    )
+                    return Path(result["local_path"])
+                except Exception as exc:
+                    logger.warning(
+                        "Character scene failed for job %s scene %s: %s",
+                        self.job_id,
+                        scene.scene_number,
+                        exc,
+                    )
 
         static_image = next(
             (a for a in assets if a.get("local_path") and a["local_path"].endswith((".png", ".jpg", ".jpeg"))),
@@ -198,12 +206,20 @@ class AssetWorker:
         )
         if static_image:
             animated_path = scene_dir / "animated.mp4"
-            await self.wan21.animate_image(
-                image_path=Path(static_image["local_path"]),
-                prompt=" ".join(scene.visual_keywords),
-                output_path=animated_path,
-            )
-            return animated_path
+            try:
+                await self.wan21.animate_image(
+                    image_path=Path(static_image["local_path"]),
+                    prompt=" ".join(scene.visual_keywords),
+                    output_path=animated_path,
+                )
+                return animated_path
+            except Exception as exc:
+                logger.warning(
+                    "Wan2.1 animation failed for job %s scene %s: %s",
+                    self.job_id,
+                    scene.scene_number,
+                    exc,
+                )
 
         video_asset = next(
             (a for a in assets if a.get("local_path") and a["local_path"].endswith(".mp4")),
@@ -251,17 +267,15 @@ class AssetWorker:
         return final_path
 
     def _create_placeholder_video(self, output_path: Path) -> None:
-        import subprocess
-
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        subprocess.run(
+        self.ffmpeg.run(
             [
                 "ffmpeg", "-y",
                 "-f", "lavfi", "-i", "color=c=black:s=2560x1080:d=5",
                 "-c:v", "libx264", "-t", "5",
                 str(output_path),
             ],
-            capture_output=True,
+            label="FFmpeg placeholder",
         )
 
     def _update_job_status(

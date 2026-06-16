@@ -6,6 +6,7 @@ from typing import Any
 import httpx
 
 from app.config import get_settings
+from app.services.settings_service import get_platform_setting
 
 logger = logging.getLogger(__name__)
 
@@ -28,10 +29,14 @@ class DeepVideoPipeline:
         output_path: Path,
         reference_image_path: Path | None = None,
     ) -> dict[str, Any]:
+        api_key = get_platform_setting("nvidia_nim_api_key")
+        if not api_key:
+            raise ValueError("NVIDIA NIM API key is not configured")
+
         video_b64 = base64.b64encode(input_video_path.read_bytes()).decode()
 
         headers = {
-            "Authorization": f"Bearer {self.settings.nvidia_nim_api_key}",
+            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         }
 
@@ -55,26 +60,30 @@ class DeepVideoPipeline:
                 reference_image_path.read_bytes()
             ).decode()
 
-        async with httpx.AsyncClient(timeout=600.0) as client:
-            response = await client.post(
-                f"{self.settings.nvidia_nim_base_url}/video/enhance",
-                headers=headers,
-                json=payload,
-            )
-            response.raise_for_status()
-            data = response.json()
+        try:
+            async with httpx.AsyncClient(timeout=600.0) as client:
+                response = await client.post(
+                    f"{self.settings.nvidia_nim_base_url}/video/enhance",
+                    headers=headers,
+                    json=payload,
+                )
+                response.raise_for_status()
+                data = response.json()
+        except httpx.HTTPError as exc:
+            logger.error("DeepVideo request failed: %s", exc)
+            raise RuntimeError(f"DeepVideo enhancement failed: {exc}") from exc
 
-            enhanced_b64 = (
-                data.get("video")
-                or data.get("output", {}).get("video")
-                or (data.get("artifacts", [{}])[0].get("base64") if data.get("artifacts") else None)
-            )
+        enhanced_b64 = (
+            data.get("video")
+            or data.get("output", {}).get("video")
+            or (data.get("artifacts", [{}])[0].get("base64") if data.get("artifacts") else None)
+        )
 
-            if not enhanced_b64:
-                raise ValueError("No enhanced video in DeepVideo-V1 response")
+        if not enhanced_b64:
+            raise ValueError("No enhanced video in DeepVideo-V1 response")
 
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            output_path.write_bytes(base64.b64decode(enhanced_b64))
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_bytes(base64.b64decode(enhanced_b64))
 
         logger.info("DeepVideo-V1 enhanced character video: %s", output_path)
         return {

@@ -57,7 +57,28 @@ class Settings(BaseSettings):
 
     @property
     def cors_origin_list(self) -> list[str]:
-        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+        origins: list[str] = []
+        seen: set[str] = set()
+        for origin in [o.strip() for o in self.cors_origins.split(",") if o.strip()]:
+            if origin not in seen:
+                origins.append(origin)
+                seen.add(origin)
+        for origin in (self.frontend_url, f"{self.frontend_url.rstrip('/')}"):
+            normalized = origin.rstrip("/")
+            if normalized and normalized not in seen:
+                origins.append(normalized)
+                seen.add(normalized)
+        return origins
+
+    def is_allowed_cors_origin(self, origin: str) -> bool:
+        if not origin:
+            return False
+        normalized = origin.rstrip("/")
+        if normalized in self.cors_origin_list:
+            return True
+        if self.debug and normalized.endswith(".trycloudflare.com"):
+            return True
+        return False
 
 
 @lru_cache

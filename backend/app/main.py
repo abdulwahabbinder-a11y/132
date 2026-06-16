@@ -4,12 +4,42 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 from app.config import get_settings
 from app.routers import admin, billing, generate, shorts, users, webhooks
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+class DynamicCORSMiddleware(BaseHTTPMiddleware):
+    """Allow configured production origins plus preview tunnels in debug mode."""
+
+    async def dispatch(self, request: Request, call_next):
+        settings = get_settings()
+        origin = request.headers.get("origin", "")
+
+        if request.method == "OPTIONS" and origin:
+            if settings.is_allowed_cors_origin(origin):
+                response = JSONResponse({"status": "ok"})
+                response.headers["Access-Control-Allow-Origin"] = origin
+                response.headers["Access-Control-Allow-Credentials"] = "true"
+                response.headers["Access-Control-Allow-Methods"] = "*"
+                response.headers["Access-Control-Allow-Headers"] = "*"
+                response.headers["Vary"] = "Origin"
+                return response
+
+        response = await call_next(request)
+
+        if origin and settings.is_allowed_cors_origin(origin):
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Vary"] = "Origin"
+
+        return response
 
 
 @asynccontextmanager
@@ -38,6 +68,7 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.add_middleware(DynamicCORSMiddleware)
 
     api = settings.api_prefix
     app.include_router(webhooks.router, prefix=api)
@@ -47,9 +78,11 @@ def create_app() -> FastAPI:
     app.include_router(users.router, prefix=api)
     app.include_router(billing.router, prefix=api)
 
-    @app.get("/health")
-    async def health():
+    async def health_check():
         return {"status": "healthy", "service": settings.app_name}
+
+    app.add_api_route("/health", health_check, methods=["GET"])
+    app.add_api_route(f"{api}/health", health_check, methods=["GET"])
 
     return app
 

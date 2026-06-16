@@ -6,9 +6,6 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-WHOOSH_SFX = "assets/sfx/whoosh.mp3"
-DEEP_BOOM_SFX = "assets/sfx/deep_boom.mp3"
-
 
 class FFmpegProcessor:
     """Audio ducking, SFX insertion, and final video assembly."""
@@ -108,6 +105,7 @@ class FFmpegProcessor:
         """Burn center-bottom aligned subtitles from ElevenLabs word timestamps."""
         srt_path = output_path.parent / "subtitles.srt"
         self._generate_srt(word_timestamps, srt_path)
+        escaped_srt = self._escape_filter_path(srt_path)
 
         width, height = self._aspect_to_resolution(aspect_ratio)
 
@@ -117,7 +115,7 @@ class FFmpegProcessor:
             "-vf", (
                 f"scale={width}:{height}:force_original_aspect_ratio=decrease,"
                 f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,"
-                f"subtitles={srt_path}:force_style="
+                f"subtitles={escaped_srt}:force_style="
                 f"'Alignment=2,FontSize=22,PrimaryColour=&HFFFFFF,"
                 f"OutlineColour=&H000000,Outline=2,MarginV=40'"
             ),
@@ -133,7 +131,7 @@ class FFmpegProcessor:
     def concat_videos(self, video_paths: list[Path], output_path: Path) -> Path:
         concat_file = output_path.parent / "concat_list.txt"
         concat_file.write_text(
-            "\n".join(f"file '{p.absolute()}'" for p in video_paths)
+            "\n".join(f"file '{p.resolve()}'" for p in video_paths)
         )
 
         cmd = [
@@ -175,6 +173,15 @@ class FFmpegProcessor:
         return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
 
     @staticmethod
+    def _escape_filter_path(path: Path) -> str:
+        return (
+            str(path.resolve())
+            .replace("\\", "/")
+            .replace(":", "\\:")
+            .replace("'", "\\'")
+        )
+
+    @staticmethod
     def _aspect_to_resolution(aspect: str) -> tuple[int, int]:
         ratios = {
             "21:9": (2560, 1080),
@@ -185,8 +192,20 @@ class FFmpegProcessor:
         return ratios.get(aspect, (2560, 1080))
 
     @staticmethod
-    def _run_ffmpeg(cmd: list[str]) -> None:
-        result = subprocess.run(cmd, capture_output=True, text=True)
+    def run(cmd: list[str], label: str = "FFmpeg") -> subprocess.CompletedProcess[str]:
+        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
         if result.returncode != 0:
-            logger.error("FFmpeg error: %s", result.stderr)
-            raise RuntimeError(f"FFmpeg failed: {result.stderr[:500]}")
+            logger.error(
+                "%s failed (exit %s): %s",
+                label,
+                result.returncode,
+                (result.stderr or result.stdout or "")[-1000:],
+            )
+            raise RuntimeError(
+                f"{label} failed: {(result.stderr or result.stdout or 'unknown error')[:500]}"
+            )
+        return result
+
+    @staticmethod
+    def _run_ffmpeg(cmd: list[str]) -> None:
+        FFmpegProcessor.run(cmd, label="FFmpeg")

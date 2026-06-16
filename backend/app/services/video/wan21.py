@@ -6,6 +6,7 @@ from typing import Any
 import httpx
 
 from app.config import get_settings
+from app.services.settings_service import get_platform_setting
 
 logger = logging.getLogger(__name__)
 
@@ -25,10 +26,14 @@ class Wan21Animator:
         output_path: Path,
         duration_seconds: float = 4.0,
     ) -> dict[str, Any]:
+        api_key = get_platform_setting("nvidia_nim_api_key")
+        if not api_key:
+            raise ValueError("NVIDIA NIM API key is not configured")
+
         image_b64 = base64.b64encode(image_path.read_bytes()).decode()
 
         headers = {
-            "Authorization": f"Bearer {self.settings.nvidia_nim_api_key}",
+            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         }
 
@@ -41,28 +46,32 @@ class Wan21Animator:
             "resolution": "1280x720",
         }
 
-        async with httpx.AsyncClient(timeout=300.0) as client:
-            response = await client.post(
-                f"{self.settings.nvidia_nim_base_url}/video/generations",
-                headers=headers,
-                json=payload,
-            )
-            response.raise_for_status()
-            data = response.json()
+        try:
+            async with httpx.AsyncClient(timeout=300.0) as client:
+                response = await client.post(
+                    f"{self.settings.nvidia_nim_base_url}/video/generations",
+                    headers=headers,
+                    json=payload,
+                )
+                response.raise_for_status()
+                data = response.json()
+        except httpx.HTTPError as exc:
+            logger.error("Wan2.1 request failed: %s", exc)
+            raise RuntimeError(f"Wan2.1 animation failed: {exc}") from exc
 
-            video_b64 = None
-            if "data" in data and data["data"]:
-                video_b64 = data["data"][0].get("b64_json") or data["data"][0].get("video")
-            elif "video" in data:
-                video_b64 = data["video"]
-            elif "artifacts" in data and data["artifacts"]:
-                video_b64 = data["artifacts"][0].get("base64")
+        video_b64 = None
+        if "data" in data and data["data"]:
+            video_b64 = data["data"][0].get("b64_json") or data["data"][0].get("video")
+        elif "video" in data:
+            video_b64 = data["video"]
+        elif "artifacts" in data and data["artifacts"]:
+            video_b64 = data["artifacts"][0].get("base64")
 
-            if not video_b64:
-                raise ValueError("No video data in Wan2.1 API response")
+        if not video_b64:
+            raise ValueError("No video data in Wan2.1 API response")
 
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            output_path.write_bytes(base64.b64decode(video_b64))
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_bytes(base64.b64decode(video_b64))
 
         logger.info("Animated image to %s (%.1fs)", output_path, duration_seconds)
         return {
