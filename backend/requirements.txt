@@ -1,0 +1,17 @@
+alembic
+asyncpg
+celery[redis]
+fastapi
+ffmpeg-python
+httpx
+orjson
+psycopg[binary]
+pydantic-settings
+python-dotenv
+python-jose[cryptography]
+SQLAlchemy>=2.0
+stripe
+structlog
+supabase
+tenacity
+uvicorn[standard]

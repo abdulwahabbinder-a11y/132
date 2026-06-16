@@ -1,0 +1,9 @@
+from celery import Celery
+
+from app.config import get_settings
+
+
+settings = get_settings()
+
+celery_app = Celery("ai_documentary_worker", broker=settings.redis_url, backend=settings.redis_url)
+celery_app.conf.task_routes = {"app.workers.tasks.process_project_assets": {"queue": "media-pipeline"}}
