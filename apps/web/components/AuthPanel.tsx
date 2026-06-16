@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { getSupabaseClient } from "@/lib/supabase";
 
 export function AuthPanel() {
   const [email, setEmail] = useState("");
@@ -11,6 +11,14 @@ export function AuthPanel() {
   async function signIn() {
     setIsSubmitting(true);
     setMessage(null);
+    let supabase;
+    try {
+      supabase = getSupabaseClient();
+    } catch (error) {
+      setIsSubmitting(false);
+      setMessage(error instanceof Error ? error.message : "Supabase is not configured.");
+      return;
+    }
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {

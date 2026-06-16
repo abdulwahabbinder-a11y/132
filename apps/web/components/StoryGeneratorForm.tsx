@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { env } from "@/lib/env";
-import { supabase } from "@/lib/supabase";
+import { getSupabaseClient } from "@/lib/supabase";
 import type { GenerateStoryResponse, LanguageCode } from "@/lib/types";
 
 type Props = {
@@ -19,6 +19,14 @@ export function StoryGeneratorForm({ onGenerated }: Props) {
   async function submit() {
     setIsSubmitting(true);
     setStatus("Checking your session and video credits...");
+    let supabase;
+    try {
+      supabase = getSupabaseClient();
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Supabase is not configured.");
+      setIsSubmitting(false);
+      return;
+    }
     const { data } = await supabase.auth.getSession();
     const token = data.session?.access_token;
     if (!token) {

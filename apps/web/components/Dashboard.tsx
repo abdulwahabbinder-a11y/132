@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Film, Layers3, Map, Mic2 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { getSupabaseClient } from "@/lib/supabase";
 import type { GenerateStoryResponse, StoryScene } from "@/lib/types";
 import { SceneTimeline } from "./SceneTimeline";
 import { StoryGeneratorForm } from "./StoryGeneratorForm";
@@ -20,6 +20,12 @@ export function Dashboard() {
   const scenes: StoryScene[] = generation?.scenes ?? [];
 
   useEffect(() => {
+    let supabase;
+    try {
+      supabase = getSupabaseClient();
+    } catch {
+      return;
+    }
     supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
     const {
       data: { subscription }

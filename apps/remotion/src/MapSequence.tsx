@@ -1,5 +1,4 @@
 import { interpolate, useCurrentFrame } from "remotion";
-import { motionPresets } from "./motionPresets";
 
 type Props = {
   coordinates: { lat: number; lng: number } | null;
@@ -34,8 +33,7 @@ export function MapSequence({ coordinates, token }: Props) {
         opacity,
         transform: `scale(${scale})`,
         border: "1px solid rgba(255,255,255,0.18)",
-        boxShadow: "0 30px 90px rgba(0,0,0,0.55)",
-        ...motionPresets.mapPush.animate
+        boxShadow: "0 30px 90px rgba(0,0,0,0.55)"
       }}
     >
       {mapUrl ? (
