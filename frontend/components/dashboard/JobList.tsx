@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { CheckCircle, Clock, Download, Loader2, XCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { api } from "@/lib/api";
+import { isDemoUserSession } from "@/lib/demo-auth";
+import { DEMO_USER_JOBS } from "@/lib/demo-data";
 
 interface Job {
   job_id: string;
@@ -16,14 +18,21 @@ interface Job {
 
 interface JobListProps {
   refreshKey: number;
+  demoMode?: boolean;
 }
 
-export function JobList({ refreshKey }: JobListProps) {
+export function JobList({ refreshKey, demoMode }: JobListProps) {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
+      if (demoMode || isDemoUserSession()) {
+        setJobs(DEMO_USER_JOBS);
+        setLoading(false);
+        return;
+      }
+
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
@@ -42,7 +51,7 @@ export function JobList({ refreshKey }: JobListProps) {
 
     const interval = setInterval(load, 10000);
     return () => clearInterval(interval);
-  }, [refreshKey]);
+  }, [refreshKey, demoMode]);
 
   const statusIcon = (status: string) => {
     if (status === "completed") return <CheckCircle className="h-5 w-5 text-green-500" />;

@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { api } from "@/lib/api";
+import { clearDemoSession, getDemoSession, isDemoUserSession } from "@/lib/demo-auth";
+import { DEMO_USER_SUBSCRIPTION } from "@/lib/demo-data";
 import { VideoGenerator } from "@/components/dashboard/VideoGenerator";
 import { JobList } from "@/components/dashboard/JobList";
 import { SubscriptionCard } from "@/components/dashboard/SubscriptionCard";
@@ -24,8 +26,24 @@ function DashboardContent() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [checkoutMsg, setCheckoutMsg] = useState<string | null>(null);
 
+  const [isDemo, setIsDemo] = useState(false);
+
   useEffect(() => {
     async function load() {
+      const demoSession = getDemoSession();
+      if (demoSession?.role === "user") {
+        setIsDemo(true);
+        setSubscription(DEMO_USER_SUBSCRIPTION);
+        setLoadError(null);
+        setLoading(false);
+        return;
+      }
+
+      if (demoSession?.role === "admin") {
+        window.location.href = "/admin";
+        return;
+      }
+
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
 
@@ -53,6 +71,12 @@ function DashboardContent() {
   }, [refreshKey, searchParams]);
 
   const handleSignOut = async () => {
+    if (isDemoUserSession()) {
+      clearDemoSession();
+      window.location.href = "/";
+      return;
+    }
+
     const supabase = createClient();
     await supabase.auth.signOut();
     window.location.href = "/";
@@ -97,6 +121,12 @@ function DashboardContent() {
           </Link>
         </div>
 
+        {isDemo && (
+          <div className="mb-6 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            Preview mode — sample dashboard data for demo@docuforge.pro
+          </div>
+        )}
+
         {checkoutMsg && (
           <div className="mb-6 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-300">
             {checkoutMsg}
@@ -120,9 +150,9 @@ function DashboardContent() {
             <VideoGenerator
               creditsLeft={subscription?.video_credits_left ?? 0}
               onGenerated={handleGenerated}
-              disabled={!!loadError}
+              disabled={!!loadError || isDemo}
             />
-            <JobList refreshKey={refreshKey} />
+            <JobList refreshKey={refreshKey} demoMode={isDemo} />
           </div>
           <div>
             {subscription && <SubscriptionCard subscription={subscription} />}

@@ -4,7 +4,7 @@ import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { demoLogin, isPlaceholderSupabase } from "@/lib/demo-auth";
+import { demoLogin, demoRedirectForRole, isPlaceholderSupabase } from "@/lib/demo-auth";
 import { getSafeRedirect } from "@/lib/auth-redirect";
 import { Film } from "lucide-react";
 
@@ -23,12 +23,12 @@ function LoginForm() {
     setError(null);
 
     if (isPlaceholderSupabase()) {
-      const ok = await demoLogin(email, password);
-      if (ok) {
-        window.location.href = redirectTo === "/create" ? "/admin" : redirectTo;
+      const result = await demoLogin(email, password);
+      if (result.ok && result.role) {
+        window.location.href = demoRedirectForRole(result.role, redirectTo);
         return;
       }
-      setError("Invalid email or password. Use demo admin credentials.");
+      setError("Invalid email or password. Use the demo admin or user credentials.");
       setLoading(false);
       return;
     }
@@ -61,9 +61,15 @@ function LoginForm() {
         <h1 className="mb-6 text-2xl font-bold">Sign In</h1>
 
         {isPlaceholderSupabase() && (
-          <p className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
-            Preview mode: use admin credentials to access the dashboard.
-          </p>
+          <div className="mb-4 space-y-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-3 text-xs text-amber-100">
+            <p className="font-medium text-amber-200">Preview mode — demo accounts</p>
+            <p>
+              <span className="text-amber-300">Admin:</span> support@docuforge.pro
+            </p>
+            <p>
+              <span className="text-amber-300">User (dashboard):</span> demo@docuforge.pro
+            </p>
+          </div>
         )}
 
         <form onSubmit={handleLogin} className="space-y-4">

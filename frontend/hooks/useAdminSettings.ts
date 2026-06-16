@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { createClient } from "@/lib/supabase/client";
 import {
-  clearDemoAdminSession,
+  clearDemoSession,
+  getDemoSession,
   isDemoAdminSession,
 } from "@/lib/demo-auth";
 import { DEMO_ADMIN_SETTINGS, DEMO_SCRAPER_STATUS } from "@/lib/demo-data";
@@ -60,6 +61,11 @@ export function useAdminSettings() {
       setScrapers(stored?.scrapers ?? DEMO_SCRAPER_STATUS);
       setIsDemo(true);
       setLoading(false);
+      return;
+    }
+
+    if (getDemoSession()?.role === "user") {
+      window.location.href = "/dashboard";
       return;
     }
 
@@ -186,7 +192,7 @@ export function useAdminSettings() {
 
   const handleLogout = useCallback(async () => {
     if (isDemo) {
-      clearDemoAdminSession();
+      clearDemoSession();
       localStorage.removeItem(DEMO_STORAGE_KEY);
     } else {
       const supabase = createClient();

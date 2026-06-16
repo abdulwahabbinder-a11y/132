@@ -182,3 +182,36 @@ export const DEMO_ADMIN_USERS: AdminUsersData = {
     },
   ],
 };
+
+export const DEMO_USER_SUBSCRIPTION = {
+  plan_type: "free",
+  video_credits_left: 5,
+  billing_cycle_end: null as string | null,
+};
+
+export const DEMO_USER_JOBS = [
+  {
+    job_id: "demo-doc-7f3a9b2c",
+    status: "completed",
+    progress: 100,
+    output_url: null,
+    error: null,
+    created_at: "2026-06-10T12:00:00Z",
+  },
+  {
+    job_id: "demo-doc-4e8c1d0f",
+    status: "processing",
+    progress: 45,
+    output_url: null,
+    error: null,
+    created_at: "2026-06-14T08:30:00Z",
+  },
+  {
+    job_id: "demo-doc-9a2b6e3d",
+    status: "failed",
+    progress: 60,
+    output_url: null,
+    error: "Asset generation timed out — retry available",
+    created_at: "2026-06-12T16:15:00Z",
+  },
+];
