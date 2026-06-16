@@ -24,4 +24,24 @@
   .card {
     @apply rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm;
   }
+
+  .prose-legal h2 {
+    @apply mb-3 mt-8 text-white;
+  }
+
+  .prose-legal p {
+    @apply leading-relaxed;
+  }
+
+  .prose-legal a {
+    @apply text-violet-400 hover:underline;
+  }
+
+  .prose-legal ul {
+    @apply space-y-2;
+  }
+
+  .prose-legal strong {
+    @apply text-white/90;
+  }
 }

@@ -49,25 +49,30 @@ const features = [
 export function Features() {
   return (
     <section id="features" className="py-24">
-      <div className="mx-auto max-w-7xl px-6">
+      <div className="mx-auto max-w-6xl px-6">
         <div className="mb-16 text-center">
+          <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-violet-400">
+            Features
+          </p>
           <h2 className="mb-4 text-3xl font-bold md:text-4xl">
-            End-to-End Documentary Pipeline
+            Everything You Need to Go Viral
           </h2>
-          <p className="mx-auto max-w-2xl text-white/60">
-            From topic to finished cinematic video — every step automated with
-            production-grade AI and real public data sources.
+          <p className="mx-auto max-w-2xl text-white/50">
+            From live web research to final MP4 — every step automated with production-grade AI.
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {features.map((feature) => (
-            <div key={feature.title} className="card group transition hover:border-brand-500/30">
-              <feature.icon className="mb-4 h-8 w-8 text-brand-500 transition group-hover:scale-110" />
-              <h3 className="mb-2 text-lg font-semibold">{feature.title}</h3>
-              <p className="text-sm leading-relaxed text-white/60">
-                {feature.description}
-              </p>
+            <div
+              key={feature.title}
+              className="group rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6 transition hover:border-violet-500/30 hover:bg-white/[0.05]"
+            >
+              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-violet-500/15 transition group-hover:bg-violet-500/25">
+                <feature.icon className="h-5 w-5 text-violet-400" />
+              </div>
+              <h3 className="mb-2 font-semibold">{feature.title}</h3>
+              <p className="text-sm leading-relaxed text-white/50">{feature.description}</p>
             </div>
           ))}
         </div>
