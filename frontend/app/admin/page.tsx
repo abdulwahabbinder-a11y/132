@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { isDemoAdminSession } from "@/lib/demo-auth";
+import { DEMO_ADMIN_SETTINGS, DEMO_SCRAPER_STATUS } from "@/lib/demo-data";
 import { api } from "@/lib/api";
 import { VidrushShell } from "@/components/vidrush/VidrushShell";
 import {
@@ -55,6 +57,14 @@ export default function AdminPage() {
 
   useEffect(() => {
     async function load() {
+      // Demo/preview admin (no Supabase required)
+      if (isDemoAdminSession()) {
+        setSettings(DEMO_ADMIN_SETTINGS);
+        setScrapers(DEMO_SCRAPER_STATUS);
+        setLoading(false);
+        return;
+      }
+
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { window.location.href = "/auth/login"; return; }
@@ -78,6 +88,15 @@ export default function AdminPage() {
   const handleSave = async () => {
     setSaving(true);
     setSaved(false);
+
+    if (isDemoAdminSession()) {
+      setSaved(true);
+      setDraft({});
+      setTimeout(() => setSaved(false), 3000);
+      setSaving(false);
+      return;
+    }
+
     const supabase = createClient();
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;

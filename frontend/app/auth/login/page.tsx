@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { demoLogin, isPlaceholderSupabase } from "@/lib/demo-auth";
 import { Film } from "lucide-react";
 
 export default function LoginPage() {
@@ -16,6 +17,18 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
+    // Preview/demo login when Supabase is not configured
+    if (isPlaceholderSupabase()) {
+      const ok = await demoLogin(email, password);
+      if (ok) {
+        window.location.href = "/admin";
+        return;
+      }
+      setError("Invalid email or password");
+      setLoading(false);
+      return;
+    }
+
     const supabase = createClient();
     const { error: authError } = await supabase.auth.signInWithPassword({
       email,
@@ -23,6 +36,12 @@ export default function LoginPage() {
     });
 
     if (authError) {
+      // Fallback to demo admin login
+      const ok = await demoLogin(email, password);
+      if (ok) {
+        window.location.href = "/admin";
+        return;
+      }
       setError(authError.message);
       setLoading(false);
       return;
