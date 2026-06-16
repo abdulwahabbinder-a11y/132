@@ -176,7 +176,12 @@ class FFmpegProcessor:
 
     @staticmethod
     def _aspect_to_resolution(aspect: str) -> tuple[int, int]:
-        ratios = {"21:9": (2560, 1080), "16:9": (1920, 1080), "4:3": (1440, 1080)}
+        ratios = {
+            "21:9": (2560, 1080),
+            "16:9": (1920, 1080),
+            "9:16": (1080, 1920),
+            "4:3": (1440, 1080),
+        }
         return ratios.get(aspect, (2560, 1080))
 
     @staticmethod

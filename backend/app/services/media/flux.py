@@ -5,7 +5,7 @@ from typing import Any
 
 import httpx
 
-from app.config import get_settings
+from app.services.settings_service import get_platform_setting
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +14,7 @@ FLUX_MODEL = "stabilityai/flux-1-dev"
 
 class FluxImageGenerator:
     def __init__(self):
-        self.settings = get_settings()
+        pass
 
     async def generate_image(
         self,
@@ -23,8 +23,11 @@ class FluxImageGenerator:
         width: int = 1920,
         height: int = 1080,
     ) -> dict[str, Any]:
+        api_key = get_platform_setting("nvidia_nim_api_key")
+        base_url = get_platform_setting("nvidia_nim_base_url") or "https://integrate.api.nvidia.com/v1"
+
         headers = {
-            "Authorization": f"Bearer {self.settings.nvidia_nim_api_key}",
+            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
             "Accept": "application/json",
         }
@@ -44,7 +47,7 @@ class FluxImageGenerator:
 
         async with httpx.AsyncClient(timeout=120.0) as client:
             response = await client.post(
-                f"{self.settings.nvidia_nim_base_url}/images/generations",
+                f"{base_url}/images/generations",
                 headers=headers,
                 json={"model": FLUX_MODEL, **payload},
             )

@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     pexels_api_key: str = ""
     pixabay_api_key: str = ""
     mapbox_access_token: str = ""
+    tavily_api_key: str = ""
+    jina_api_key: str = ""
 
     # Redis / Celery
     redis_url: str = "redis://localhost:6379/0"

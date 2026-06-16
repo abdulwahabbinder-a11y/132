@@ -52,3 +52,20 @@ async def get_user_subscription(user_id: UUID) -> dict:
             detail="Subscription not found for user",
         )
     return result.data
+
+
+async def require_admin(user_id: UUID = Depends(get_current_user_id)) -> UUID:
+    supabase = get_supabase()
+    result = (
+        supabase.table("users")
+        .select("is_admin")
+        .eq("id", str(user_id))
+        .maybe_single()
+        .execute()
+    )
+    if not result.data or not result.data.get("is_admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
+        )
+    return user_id

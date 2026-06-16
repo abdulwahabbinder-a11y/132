@@ -5,14 +5,13 @@ from typing import Any
 
 import httpx
 
-from app.config import get_settings
+from app.services.settings_service import get_platform_setting
 
 logger = logging.getLogger(__name__)
 
 
 class ElevenLabsService:
     def __init__(self):
-        self.settings = get_settings()
         self.base_url = "https://api.elevenlabs.io/v1"
 
     async def synthesize_with_timestamps(
@@ -21,8 +20,11 @@ class ElevenLabsService:
         output_path: Path,
         timestamps_path: Path | None = None,
     ) -> dict[str, Any]:
+        api_key = get_platform_setting("elevenlabs_api_key")
+        voice_id = get_platform_setting("elevenlabs_voice_id", "21m00Tcm4TlvDq8ikWAM")
+
         headers = {
-            "xi-api-key": self.settings.elevenlabs_api_key,
+            "xi-api-key": api_key,
             "Content-Type": "application/json",
         }
 
@@ -38,7 +40,7 @@ class ElevenLabsService:
 
         async with httpx.AsyncClient(timeout=120.0) as client:
             response = await client.post(
-                f"{self.base_url}/text-to-speech/{self.settings.elevenlabs_voice_id}/with-timestamps",
+                f"{self.base_url}/text-to-speech/{voice_id}/with-timestamps",
                 headers=headers,
                 json=payload,
             )

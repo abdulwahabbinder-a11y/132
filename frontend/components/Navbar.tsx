@@ -22,7 +22,10 @@ export function Navbar() {
           <Link href="#pricing" className="text-sm text-white/70 hover:text-white">
             Pricing
           </Link>
-          <Link href="/dashboard" className="btn-primary text-sm">
+          <Link href="/shorts/wizard" className="text-sm text-white/70 hover:text-white">
+            Viral Shorts
+          </Link>
+          <Link href="/dashboard" className="text-sm text-white/70 hover:text-white">
             Dashboard
           </Link>
         </div>
@@ -45,9 +48,12 @@ export function Navbar() {
             <Link href="#pricing" onClick={() => setOpen(false)}>
               Pricing
             </Link>
-            <Link href="/dashboard" className="btn-primary text-center">
-              Dashboard
-            </Link>
+          <Link href="/shorts/wizard" onClick={() => setOpen(false)}>
+            Viral Shorts
+          </Link>
+          <Link href="/dashboard" onClick={() => setOpen(false)}>
+            Dashboard
+          </Link>
           </div>
         </div>
       )}

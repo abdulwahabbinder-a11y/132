@@ -77,6 +77,73 @@ export class ApiClient {
       body: JSON.stringify({ plan }),
     });
   }
+
+  async generateShort(data: { topic: string; target_duration_seconds?: number }) {
+    return this.request<{
+      job_id: string;
+      status: string;
+      phase: string;
+      message: string;
+    }>("/shorts/generate", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getShortJob(jobId: string) {
+    return this.request<{
+      job_id: string;
+      topic: string;
+      status: string;
+      phase: string;
+      progress: number;
+      output_url: string | null;
+      error: string | null;
+      logs: Array<{
+        timestamp: string;
+        phase: string;
+        message: string;
+        progress: number;
+        level: string;
+      }>;
+      created_at: string | null;
+    }>(`/shorts/${jobId}`);
+  }
+
+  async getShortLogs(jobId: string) {
+    return this.request<
+      Array<{
+        timestamp: string;
+        phase: string;
+        message: string;
+        progress: number;
+        level: string;
+      }>
+    >(`/shorts/${jobId}/logs`);
+  }
+
+  async getAdminSettings() {
+    return this.request<
+      Array<{
+        key: string;
+        value: string;
+        category: string;
+        label: string | null;
+        is_secret: boolean;
+        value_masked: string | null;
+      }>
+    >("/admin/settings");
+  }
+
+  async updateAdminSettings(settings: Record<string, string>) {
+    return this.request<{ status: string; updated_keys: string[] }>(
+      "/admin/settings",
+      {
+        method: "PUT",
+        body: JSON.stringify({ settings }),
+      }
+    );
+  }
 }
 
 export const api = new ApiClient();

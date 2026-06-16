@@ -7,7 +7,7 @@ import { api } from "@/lib/api";
 import { VideoGenerator } from "@/components/dashboard/VideoGenerator";
 import { JobList } from "@/components/dashboard/JobList";
 import { SubscriptionCard } from "@/components/dashboard/SubscriptionCard";
-import { Film, LogOut } from "lucide-react";
+import { Film, LogOut, Zap } from "lucide-react";
 
 interface Subscription {
   plan_type: string;
@@ -80,7 +80,13 @@ export default function DashboardPage() {
       </header>
 
       <main className="mx-auto max-w-7xl px-6 py-8">
-        <h1 className="mb-8 text-3xl font-bold">Dashboard</h1>
+        <div className="mb-8 flex items-center justify-between">
+          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <Link href="/shorts/wizard" className="btn-primary gap-2 text-sm">
+            <Zap className="h-4 w-4" />
+            Viral Short Wizard
+          </Link>
+        </div>
 
         <div className="grid gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-8">

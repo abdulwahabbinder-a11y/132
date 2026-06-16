@@ -103,7 +103,32 @@ npm start
 | `POST` | `/api/billing/checkout` | Create Stripe checkout session |
 | `GET` | `/api/subscription` | Get user subscription & credits |
 | `GET` | `/api/jobs` | List video generation jobs |
+| `POST` | `/api/shorts/generate` | Start viral short pipeline (Tavily/Jina → Llama → Flux → Remotion) |
+| `GET` | `/api/shorts/{id}` | Get short job status + progress logs |
+| `GET` | `/api/shorts/{id}/logs` | Poll pipeline log entries |
+| `GET` | `/api/admin/settings` | Admin: list platform API keys |
+| `PUT` | `/api/admin/settings` | Admin: update API keys in Supabase |
 | `GET` | `/health` | Health check |
+
+## Vidrush AI Clone — Viral Shorts
+
+A production-ready viral short video wizard at `/shorts/wizard` with animated progress logs tracking:
+
+1. **Web Scraping** — Tavily + Jina AI live research on the user's topic
+2. **Scripting** — Llama 3.1 generates structured viral script JSON
+3. **Asset Generation** — Flux 1-dev images (9:16) + ElevenLabs narration
+4. **Rendering** — Remotion + FFmpeg local render with burned-in subtitles
+
+### Admin Control
+
+All API keys are stored in the Supabase `platform_settings` table and managed via `/admin`:
+
+```sql
+-- Grant admin access to a user
+UPDATE public.users SET is_admin = true WHERE email = 'you@example.com';
+```
+
+Run migration `supabase/migrations/002_vidrush_shorts_and_settings.sql`, then configure keys in the admin dashboard. Keys fall back to `.env` if not set in Supabase.
 
 ## Subscription Plans
 

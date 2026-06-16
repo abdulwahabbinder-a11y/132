@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.routers import billing, generate, users, webhooks
+from app.routers import admin, billing, generate, shorts, users, webhooks
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -42,6 +42,8 @@ def create_app() -> FastAPI:
     api = settings.api_prefix
     app.include_router(webhooks.router, prefix=api)
     app.include_router(generate.router, prefix=api)
+    app.include_router(shorts.router, prefix=api)
+    app.include_router(admin.router, prefix=api)
     app.include_router(users.router, prefix=api)
     app.include_router(billing.router, prefix=api)
 

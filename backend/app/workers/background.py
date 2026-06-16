@@ -37,3 +37,17 @@ def enqueue_video_pipeline(self, job_id: str):
     except Exception as exc:
         logger.exception("Pipeline failed for job %s, retrying", job_id)
         raise self.retry(exc=exc, countdown=30)
+
+
+@celery_app.task(name="enqueue_short_pipeline", bind=True, max_retries=2)
+def enqueue_short_pipeline(self, job_id: str, topic: str, target_duration_seconds: int = 60):
+    from app.services.short_pipeline import run_short_pipeline
+
+    logger.info("Starting viral short pipeline for job %s", job_id)
+    try:
+        result = run_short_pipeline(job_id, topic, target_duration_seconds)
+        logger.info("Short pipeline completed for job %s", job_id)
+        return result
+    except Exception as exc:
+        logger.exception("Short pipeline failed for job %s", job_id)
+        raise self.retry(exc=exc, countdown=30)
