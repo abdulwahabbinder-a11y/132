@@ -16,6 +16,7 @@ from app.services.scrapers.aggregator import ResearchAggregator
 from app.services.settings_service import get_platform_setting
 from app.services.video.elevenlabs import ElevenLabsService
 from app.services.video.ffmpeg_processor import FFmpegProcessor
+from app.services.remotion_render import render_viral_short
 
 logger = logging.getLogger(__name__)
 
@@ -194,10 +195,16 @@ class ShortVideoPipeline:
         manifest_path.write_text(json.dumps(props, indent=2))
 
         remotion_output = self.output_dir / "remotion_raw.mp4"
-        await self._invoke_remotion(props, manifest_path, remotion_output)
+        remotion_ok = await asyncio.to_thread(
+            render_viral_short,
+            job_id=self.job_id,
+            props=props,
+            output_path=remotion_output,
+            log_fn=self._log,
+        )
 
         final_path = self.output_dir / "viral_short.mp4"
-        if remotion_output.exists():
+        if remotion_ok and remotion_output.exists():
             self.ffmpeg.burn_subtitles(
                 video_path=remotion_output,
                 word_timestamps=ts_data.get("word_timestamps", []),
@@ -209,30 +216,6 @@ class ShortVideoPipeline:
             await self._ffmpeg_slideshow_fallback(scene_assets, ts_data, final_path)
 
         return final_path
-
-    async def _invoke_remotion(
-        self, props: dict, manifest_path: Path, output_path: Path
-    ) -> None:
-        remotion_dir = Path(__file__).resolve().parents[3] / "remotion"
-        if not remotion_dir.exists():
-            return
-
-        cmd = [
-            "npx", "remotion", "render",
-            "src/index.ts",
-            "ViralShortComposition",
-            str(output_path),
-            "--props", str(manifest_path),
-        ]
-
-        try:
-            result = subprocess.run(
-                cmd, cwd=str(remotion_dir), capture_output=True, text=True, timeout=600
-            )
-            if result.returncode != 0:
-                self._log("rendering", f"Remotion warning: {result.stderr[:200]}", 80, "warn")
-        except (subprocess.TimeoutExpired, FileNotFoundError) as exc:
-            self._log("rendering", f"Remotion skipped: {exc}", 80, "warn")
 
     async def _ffmpeg_slideshow_fallback(
         self,

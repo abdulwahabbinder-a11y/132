@@ -8,7 +8,8 @@ import {
   useVideoConfig,
   Video,
 } from "remotion";
-import type { SceneData } from "./types";
+import type { SceneData } from "../types";
+import { assetUrl } from "../utils/assetUrl";
 
 interface SceneClipProps {
   scene: SceneData;
@@ -33,11 +34,13 @@ export const SceneClip: React.FC<SceneClipProps> = ({ scene, durationInFrames })
     extrapolateRight: "clamp",
   });
 
+  const videoSrc = assetUrl(scene.video_path);
+
   return (
     <AbsoluteFill style={{ backgroundColor: "#0a0a0a" }}>
-      {scene.video_path ? (
+      {videoSrc ? (
         <Video
-          src={scene.video_path}
+          src={videoSrc}
           style={{
             width: "100%",
             height: "100%",

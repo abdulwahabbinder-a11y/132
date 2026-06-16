@@ -7,7 +7,7 @@ Production Dockerfiles for **frontend** (Next.js) and **backend** (FastAPI + Cel
 | File | Purpose |
 |------|---------|
 | `frontend/Dockerfile` | Next.js standalone — optimized for Cloud Run (~150MB) |
-| `backend/Dockerfile` | FastAPI API + FFmpeg — port 8080 |
+| `backend/Dockerfile` | FastAPI + FFmpeg + Remotion (Node 20) — port 8080 |
 | `backend/worker_entrypoint.sh` | Celery worker with HTTP health check for Cloud Run |
 | `docker-compose.prod.yml` | Test full stack locally before deploy |
 | `scripts/docker-build.sh` | One-command image build |
@@ -34,9 +34,9 @@ docker compose -f docker-compose.prod.yml up --build
 
 ## Build images manually
 
-### Backend
+### Backend (includes Remotion renderer)
 ```bash
-docker build -t docuforge-api ./backend
+docker build -f backend/Dockerfile -t docuforge-api .
 docker run -p 8080:8080 --env-file .env docuforge-api
 ```
 

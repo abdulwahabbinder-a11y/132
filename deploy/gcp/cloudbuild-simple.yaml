@@ -15,11 +15,13 @@ steps:
     name: gcr.io/cloud-builders/docker
     args:
       - build
+      - -f
+      - backend/Dockerfile
       - -t
       - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/backend:$SHORT_SHA
       - -t
       - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/backend:latest
-      - ./backend
+      - .
 
   - id: push-backend
     name: gcr.io/cloud-builders/docker

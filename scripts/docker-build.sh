@@ -7,8 +7,8 @@ DOMAIN="${DOMAIN:-docuforge.pro}"
 SUPABASE_URL="${NEXT_PUBLIC_SUPABASE_URL:-https://placeholder.supabase.co}"
 SUPABASE_ANON="${NEXT_PUBLIC_SUPABASE_ANON_KEY:-placeholder}"
 
-echo "==> Building backend image..."
-docker build -t docuforge-api:latest "$ROOT/backend"
+echo "==> Building backend image (API + Remotion)..."
+docker build -f backend/Dockerfile -t docuforge-api:latest "$ROOT"
 
 echo "==> Building frontend image..."
 docker build -t docuforge-frontend:latest "$ROOT/frontend" \

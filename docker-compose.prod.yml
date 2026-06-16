@@ -14,8 +14,8 @@ services:
 
   api:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     ports:
       - "8080:8080"
     env_file:
@@ -24,6 +24,7 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - FRONTEND_URL=http://localhost:3000
       - CORS_ORIGINS=http://localhost:3000,http://localhost:8080
+      - REMOTION_PROJECT_DIR=/app/remotion
     depends_on:
       redis:
         condition: service_healthy
@@ -36,13 +37,14 @@ services:
 
   worker:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     command: ["./worker_entrypoint.sh"]
     env_file:
       - .env
     environment:
       - REDIS_URL=redis://redis:6379/0
+      - REMOTION_PROJECT_DIR=/app/remotion
     depends_on:
       redis:
         condition: service_healthy

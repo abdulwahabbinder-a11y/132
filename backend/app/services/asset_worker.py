@@ -17,6 +17,7 @@ from app.services.video.deepvideo import DeepVideoPipeline
 from app.services.video.elevenlabs import ElevenLabsService
 from app.services.video.ffmpeg_processor import FFmpegProcessor
 from app.services.video.wan21 import Wan21Animator
+from app.services.remotion_render import render_documentary
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +51,7 @@ class AssetWorker:
 
         scene_assets: list[dict[str, Any]] = []
         all_word_timestamps: list[dict[str, Any]] = []
-        scene_videos: list[Path] = []
+        scene_videos: list[Path | None] = []
         time_offset = 0.0
 
         total_scenes = len(story.scenes)
@@ -85,8 +86,7 @@ class AssetWorker:
             scene_video = await self._process_scene_video(
                 scene, assets, narration_path, scene_dir
             )
-            if scene_video:
-                scene_videos.append(scene_video)
+            scene_videos.append(scene_video)
 
             time_offset += tts_result.get("duration_seconds", 4.0)
 
@@ -105,7 +105,7 @@ class AssetWorker:
                         if s.location_coordinates
                         else None
                     ),
-                    "video_path": str(scene_videos[i]) if i < len(scene_videos) else None,
+                    "video_path": str(scene_videos[i]) if scene_videos[i] else None,
                 }
                 for i, s in enumerate(story.scenes)
             ],
@@ -117,7 +117,7 @@ class AssetWorker:
         manifest_path.write_text(json.dumps(composition_manifest, indent=2))
 
         output_path = await self._finalize_video(
-            scene_videos, all_word_timestamps, composition_manifest
+            [v for v in scene_videos if v], all_word_timestamps, composition_manifest
         )
 
         self._update_job_status("completed", 100, output_url=str(output_path))
@@ -231,9 +231,14 @@ class AssetWorker:
             self._create_placeholder_video(concat_path)
 
         remotion_output = output_dir / "remotion_render.mp4"
-        await self._invoke_remotion_render(manifest, remotion_output)
+        remotion_ok = await asyncio.to_thread(
+            render_documentary,
+            job_id=self.job_id,
+            props=manifest,
+            output_path=remotion_output,
+        )
 
-        final_source = remotion_output if remotion_output.exists() else concat_path
+        final_source = remotion_output if remotion_ok and remotion_output.exists() else concat_path
 
         final_path = output_dir / "final_documentary.mp4"
         self.ffmpeg.burn_subtitles(
@@ -244,35 +249,6 @@ class AssetWorker:
         )
 
         return final_path
-
-    async def _invoke_remotion_render(
-        self, manifest: dict[str, Any], output_path: Path
-    ) -> None:
-        import subprocess
-
-        manifest_path = self.work_dir / "composition_manifest.json"
-        remotion_dir = Path(__file__).resolve().parents[3] / "remotion"
-
-        if not remotion_dir.exists():
-            logger.warning("Remotion project not found, skipping render orchestration")
-            return
-
-        cmd = [
-            "npx", "remotion", "render",
-            "src/index.ts",
-            "DocumentaryComposition",
-            str(output_path),
-            "--props", str(manifest_path),
-        ]
-
-        try:
-            result = subprocess.run(
-                cmd, cwd=str(remotion_dir), capture_output=True, text=True, timeout=600
-            )
-            if result.returncode != 0:
-                logger.warning("Remotion render failed: %s", result.stderr[:500])
-        except (subprocess.TimeoutExpired, FileNotFoundError) as exc:
-            logger.warning("Remotion render skipped: %s", exc)
 
     def _create_placeholder_video(self, output_path: Path) -> None:
         import subprocess

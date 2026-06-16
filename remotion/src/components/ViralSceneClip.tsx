@@ -9,6 +9,7 @@ import {
   useVideoConfig,
 } from "remotion";
 import type { ViralSceneData } from "../viralTypes";
+import { assetUrl } from "../utils/assetUrl";
 
 interface ViralSceneClipProps {
   scene: ViralSceneData;
@@ -28,13 +29,12 @@ export const ViralSceneClip: React.FC<ViralSceneClipProps> = ({
   });
   const textY = interpolate(frame, [0, 15], [30, 0], { extrapolateRight: "clamp" });
 
-  const imageSrc = scene.image_path.startsWith("/")
-    ? scene.image_path
-    : scene.image_path;
+  const imageSrc = assetUrl(scene.image_path);
+  const audioSrc = assetUrl(scene.audio_path);
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#000" }}>
-      {scene.image_path && (
+      {imageSrc && (
         <Img
           src={imageSrc}
           style={{
@@ -83,7 +83,7 @@ export const ViralSceneClip: React.FC<ViralSceneClipProps> = ({
         </AbsoluteFill>
       )}
 
-      {scene.audio_path && <Audio src={scene.audio_path} />}
+      {audioSrc && <Audio src={audioSrc} />}
     </AbsoluteFill>
   );
 };
