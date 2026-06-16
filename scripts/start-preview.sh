@@ -7,45 +7,62 @@ PORT=3000
 LOG="/tmp/docuforge-tunnel.log"
 
 pkill -f "cloudflared tunnel" 2>/dev/null || true
+pkill -f "next dev" 2>/dev/null || true
 pkill -f "next start" 2>/dev/null || true
-sleep 1
+pkill -f "next-server" 2>/dev/null || true
+sleep 2
 
-# Start frontend if not running
-if ! curl -s -o /dev/null "http://127.0.0.1:${PORT}/"; then
-  echo "==> Building frontend..."
-  cd "$ROOT/frontend"
-  rm -rf .next
-  npm run build
-  tmux -f /exec-daemon/tmux.portal.conf kill-session -t docuforge-frontend 2>/dev/null || true
-  tmux -f /exec-daemon/tmux.portal.conf new-session -d -s docuforge-frontend -c "$ROOT/frontend" -- "${SHELL:-zsh}" -l
-  tmux -f /exec-daemon/tmux.portal.conf send-keys -t docuforge-frontend:0.0 "npm run start" C-m
-  sleep 5
-fi
+echo "==> Building frontend..."
+cd "$ROOT/frontend"
+npm run build
 
-echo "==> Starting Cloudflare tunnel..."
-tmux -f /exec-daemon/tmux.portal.conf kill-session -t docuforge-tunnel 2>/dev/null || true
-tmux -f /exec-daemon/tmux.portal.conf new-session -d -s docuforge-tunnel -c "$ROOT" -- "${SHELL:-zsh}" -l
-tmux -f /exec-daemon/tmux.portal.conf send-keys -t docuforge-tunnel:0.0 "npx --yes cloudflared tunnel --url http://127.0.0.1:${PORT} 2>&1 | tee ${LOG}" C-m
+tmux -f /exec-daemon/tmux.portal.conf kill-session -t frontend-live 2>/dev/null || true
+tmux -f /exec-daemon/tmux.portal.conf new-session -d -s frontend-live -c "$ROOT/frontend" -- "${SHELL:-zsh}" -l
+tmux -f /exec-daemon/tmux.portal.conf send-keys -t frontend-live:0.0 "npm run start" C-m
 
-echo "==> Waiting for public URL..."
+echo "==> Waiting for frontend on :${PORT}..."
 for i in $(seq 1 30); do
-  URL=$(rg -o 'https://[a-zA-Z0-9-]+\.trycloudflare\.com' "$LOG" 2>/dev/null | head -1 || true)
-  if [[ -n "$URL" ]]; then
-    echo ""
-    echo "============================================"
-    echo "  LIVE PREVIEW URLS"
-    echo "============================================"
-    echo "  Landing:  ${URL}"
-    echo "  Admin:    ${URL}/admin"
-    echo "  Login:    ${URL}/auth/login"
-    echo ""
-    echo "  Admin email:    support@docuforge.pro"
-    echo "  Admin password: (see frontend/.env.local DEMO_ADMIN_PASSWORD)"
-    echo "============================================"
-    exit 0
+  if curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${PORT}/" | rg -q '^200$'; then
+    break
   fi
   sleep 1
 done
 
-echo "Tunnel URL not ready yet. Check: tail -f ${LOG}"
-exit 1
+echo "==> Starting Cloudflare tunnel..."
+rm -f "$LOG"
+tmux -f /exec-daemon/tmux.portal.conf kill-session -t docuforge-tunnel 2>/dev/null || true
+tmux -f /exec-daemon/tmux.portal.conf new-session -d -s docuforge-tunnel -c "$ROOT" -- "${SHELL:-zsh}" -l
+tmux -f /exec-daemon/tmux.portal.conf send-keys -t docuforge-tunnel:0.0 "npx --yes cloudflared tunnel --protocol http2 --url http://127.0.0.1:${PORT} 2>&1 | tee ${LOG}" C-m
+
+echo "==> Waiting for public URL..."
+URL=""
+for i in $(seq 1 45); do
+  URL=$(rg -o 'https://[a-zA-Z0-9-]+\.trycloudflare\.com' "$LOG" 2>/dev/null | head -1 || true)
+  if [[ -n "$URL" ]]; then
+    sleep 4
+    code=$(curl -sL -o /dev/null -w "%{http_code}" --max-time 20 "${URL}/" || echo "000")
+    if [[ "$code" == "200" ]]; then
+      break
+    fi
+  fi
+  sleep 1
+done
+
+if [[ -z "$URL" ]]; then
+  echo "Tunnel URL not ready yet. Check: tail -f ${LOG}"
+  exit 1
+fi
+
+echo ""
+echo "============================================"
+echo "  LIVE PREVIEW URLS"
+echo "============================================"
+echo "  Landing:    ${URL}"
+echo "  Login:      ${URL}/auth/login"
+echo "  Dashboard:  ${URL}/dashboard"
+echo "  Admin:      ${URL}/admin"
+echo "  Create:     ${URL}/create"
+echo ""
+echo "  Admin email:    support@docuforge.pro"
+echo "  Admin password: (see frontend/.env.local DEMO_ADMIN_PASSWORD)"
+echo "============================================"
