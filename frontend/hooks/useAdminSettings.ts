@@ -68,6 +68,7 @@ export function useAdminSettings() {
       data: { session },
     } = await supabase.auth.getSession();
     if (!session) {
+      setLoading(false);
       window.location.href = "/auth/login";
       return;
     }
@@ -155,7 +156,10 @@ export function useAdminSettings() {
     const {
       data: { session },
     } = await supabase.auth.getSession();
-    if (!session) return;
+    if (!session) {
+      setSaving(false);
+      return;
+    }
     api.setToken(session.access_token);
 
     try {
@@ -180,10 +184,13 @@ export function useAdminSettings() {
     }
   }, [isDemo, settings, scrapers, draft]);
 
-  const handleLogout = useCallback(() => {
+  const handleLogout = useCallback(async () => {
     if (isDemo) {
       clearDemoAdminSession();
       localStorage.removeItem(DEMO_STORAGE_KEY);
+    } else {
+      const supabase = createClient();
+      await supabase.auth.signOut();
     }
     window.location.href = "/auth/login";
   }, [isDemo]);

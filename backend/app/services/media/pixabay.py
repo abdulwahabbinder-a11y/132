@@ -5,13 +5,14 @@ from typing import Any
 import httpx
 
 from app.config import get_settings
+from app.services.settings_service import get_platform_setting
 
 logger = logging.getLogger(__name__)
 
 
 class PixabayClient:
     def __init__(self):
-        self.api_key = get_settings().pixabay_api_key
+        self.api_key = get_platform_setting("pixabay_api_key") or get_settings().pixabay_api_key
         self.base_url = "https://pixabay.com/api/videos/"
 
     async def search_videos(

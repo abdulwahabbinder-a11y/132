@@ -5,13 +5,14 @@ from typing import Any
 import httpx
 
 from app.config import get_settings
+from app.services.settings_service import get_platform_setting
 
 logger = logging.getLogger(__name__)
 
 
 class PexelsClient:
     def __init__(self):
-        self.api_key = get_settings().pexels_api_key
+        self.api_key = get_platform_setting("pexels_api_key") or get_settings().pexels_api_key
         self.base_url = "https://api.pexels.com/videos"
 
     async def search_videos(

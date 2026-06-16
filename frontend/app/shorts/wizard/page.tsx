@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { api } from "@/lib/api";
@@ -8,19 +8,30 @@ import { ViralShortWizard } from "@/components/shorts/ViralShortWizard";
 import { Film, ArrowLeft } from "lucide-react";
 
 export default function ShortsWizardPage() {
-  const [authed, setAuthed] = useState<boolean | null>(null);
+  const [ready, setReady] = useState(false);
+  const [credits, setCredits] = useState<number | undefined>();
 
-  useEffect(() => {
-    createClient().auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        window.location.href = "/auth/login?redirect=/shorts/wizard";
-      } else {
-        setAuthed(true);
-      }
-    });
+  const load = useCallback(async () => {
+    const { data: { session } } = await createClient().auth.getSession();
+    if (!session) {
+      window.location.href = "/auth/login?redirect=/shorts/wizard";
+      return;
+    }
+    api.setToken(session.access_token);
+    try {
+      const sub = await api.getSubscription();
+      setCredits(sub.video_credits_left);
+    } catch {
+      /* credits optional */
+    }
+    setReady(true);
   }, []);
 
-  if (!authed) {
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  if (!ready) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
@@ -44,7 +55,7 @@ export default function ShortsWizardPage() {
       </header>
 
       <main className="px-6 py-10">
-        <ViralShortWizard />
+        <ViralShortWizard creditsLeft={credits} />
       </main>
     </div>
   );

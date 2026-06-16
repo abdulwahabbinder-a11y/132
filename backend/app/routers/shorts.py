@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -11,7 +12,8 @@ from app.schemas.short import (
     PipelineLogEntry,
     ShortJobStatus,
 )
-from app.services.credits import can_render_video, deduct_credits
+from app.services.credits import can_render_video, credits_per_video, deduct_credits
+from app.services.downloads import resolve_local_video, stream_video_file
 from app.workers.background import enqueue_short_pipeline
 
 logger = logging.getLogger(__name__)
@@ -27,9 +29,10 @@ async def generate_short(
     credits_left = subscription.get("video_credits_left", 0)
 
     if not can_render_video(credits_left):
+        cost = credits_per_video()
         raise HTTPException(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
-            detail="Not enough credits for one video (5 credits required). Please upgrade your plan.",
+            detail=f"Not enough credits for one video ({cost} credits required). Please upgrade your plan.",
         )
 
     job_id = uuid4()
@@ -43,7 +46,7 @@ async def generate_short(
         "phase": "queued",
         "progress": 0,
         "logs": [{
-            "timestamp": "now",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "phase": "queued",
             "message": "Job queued — starting viral short pipeline...",
             "progress": 0,
@@ -150,3 +153,26 @@ async def get_short_job(
         logs=logs,
         created_at=row.get("created_at"),
     )
+
+
+@router.get("/{job_id}/download")
+async def download_short(
+    job_id: UUID,
+    user_id: UUID = Depends(get_current_user_id),
+):
+    supabase = get_supabase()
+    result = (
+        supabase.table("short_video_jobs")
+        .select("output_url, user_id")
+        .eq("id", str(job_id))
+        .maybe_single()
+        .execute()
+    )
+    if not result.data or result.data["user_id"] != str(user_id):
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    path = resolve_local_video(result.data.get("output_url"))
+    if not path:
+        raise HTTPException(status_code=404, detail="Video file not available yet")
+
+    return stream_video_file(path, "viral-short.mp4")

@@ -1,13 +1,13 @@
 import json
 import logging
 from datetime import datetime, timezone
-from uuid import UUID, uuid4
 
 import stripe
 from fastapi import APIRouter, HTTPException, Request, status
 
 from app.config import get_settings
 from app.database import get_supabase
+from app.services.stripe_config import stripe_secret_key, stripe_webhook_secret
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
@@ -16,12 +16,13 @@ router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 @router.post("/stripe")
 async def stripe_webhook(request: Request):
     settings = get_settings()
-    stripe.api_key = settings.stripe_secret_key
+    stripe.api_key = stripe_secret_key()
+    webhook_secret = stripe_webhook_secret()
 
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
 
-    if not settings.stripe_webhook_secret:
+    if not webhook_secret:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Stripe webhook secret not configured",
@@ -29,7 +30,7 @@ async def stripe_webhook(request: Request):
 
     try:
         event = stripe.Webhook.construct_event(
-            payload, sig_header, settings.stripe_webhook_secret
+            payload, sig_header, webhook_secret
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail="Invalid payload") from exc
@@ -39,7 +40,9 @@ async def stripe_webhook(request: Request):
     event_type = event["type"]
     data_object = event["data"]["object"]
 
-    if event_type == "customer.subscription.created":
+    if event_type == "checkout.session.completed":
+        await _handle_checkout_completed(data_object)
+    elif event_type == "customer.subscription.created":
         await _handle_subscription_created(data_object)
     elif event_type == "customer.subscription.updated":
         await _handle_subscription_updated(data_object)
@@ -49,6 +52,24 @@ async def stripe_webhook(request: Request):
         await _handle_invoice_paid(data_object)
 
     return {"status": "ok", "event": event_type}
+
+
+async def _handle_checkout_completed(session: dict) -> None:
+    settings = get_settings()
+    supabase = get_supabase()
+    customer_id = session.get("customer")
+    user_id = (session.get("metadata") or {}).get("user_id")
+
+    if user_id and customer_id:
+        supabase.table("subscriptions").upsert(
+            {
+                "user_id": user_id,
+                "stripe_customer_id": customer_id,
+                "plan_type": "free",
+                "video_credits_left": settings.free_plan_credits,
+            },
+            on_conflict="user_id",
+        ).execute()
 
 
 async def _handle_subscription_created(subscription: dict) -> None:
@@ -90,6 +111,7 @@ async def _handle_subscription_created(subscription: dict) -> None:
 
 
 async def _handle_subscription_updated(subscription: dict) -> None:
+    settings = get_settings()
     supabase = get_supabase()
     customer_id = subscription.get("customer")
     status_val = subscription.get("status")
@@ -110,6 +132,7 @@ async def _handle_subscription_updated(subscription: dict) -> None:
         update_data["plan_type"] = "pro"
     elif status_val in ("canceled", "unpaid", "past_due"):
         update_data["plan_type"] = "free"
+        update_data["video_credits_left"] = settings.free_plan_credits
 
     supabase.table("subscriptions").update(update_data).eq(
         "stripe_customer_id", customer_id

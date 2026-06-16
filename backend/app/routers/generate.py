@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.dependencies import get_current_user_id, get_user_subscription
 from app.schemas.story import GenerateStoryRequest, GenerateStoryResponse
 from app.services.llm.router import StoryGenerationRouter
-from app.services.credits import can_render_video, deduct_credits
+from app.services.credits import can_render_video, credits_per_video, deduct_credits
 from app.workers.background import enqueue_video_pipeline
 
 logger = logging.getLogger(__name__)
@@ -24,9 +24,10 @@ async def generate_story(
     credits_left = subscription.get("video_credits_left", 0)
 
     if not can_render_video(credits_left):
+        cost = credits_per_video()
         raise HTTPException(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
-            detail="Not enough credits for one video (5 credits required). Please upgrade your plan.",
+            detail=f"Not enough credits for one video ({cost} credits required). Please upgrade your plan.",
         )
 
     try:

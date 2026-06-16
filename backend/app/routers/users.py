@@ -6,6 +6,7 @@ from app.dependencies import get_current_user_id
 from app.database import get_supabase
 from app.schemas.story import VideoJobStatus
 from app.schemas.user import SubscriptionResponse, UserResponse
+from app.services.downloads import resolve_local_video, stream_video_file
 
 router = APIRouter(tags=["users"])
 
@@ -62,6 +63,30 @@ async def list_jobs(user_id: UUID = Depends(get_current_user_id)):
         )
         for row in (result.data or [])
     ]
+
+
+@router.get("/jobs/{job_id}/download")
+async def download_job(
+    job_id: UUID,
+    user_id: UUID = Depends(get_current_user_id),
+):
+    supabase = get_supabase()
+    result = (
+        supabase.table("video_jobs")
+        .select("output_url, user_id, topic")
+        .eq("id", str(job_id))
+        .maybe_single()
+        .execute()
+    )
+    if not result.data or result.data["user_id"] != str(user_id):
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    path = resolve_local_video(result.data.get("output_url"))
+    if not path:
+        raise HTTPException(status_code=404, detail="Video file not available yet")
+
+    safe_name = "documentary.mp4"
+    return stream_video_file(path, safe_name)
 
 
 @router.get("/jobs/{job_id}", response_model=VideoJobStatus)

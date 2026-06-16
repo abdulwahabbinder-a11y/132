@@ -1,4 +1,6 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+import { parseApiError } from "./api-errors";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
 
 export class ApiClient {
   private token: string | null = null;
@@ -27,7 +29,7 @@ export class ApiClient {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ detail: "Request failed" }));
-      throw new Error(error.detail || `HTTP ${response.status}`);
+      throw new Error(parseApiError(error.detail, `HTTP ${response.status}`));
     }
 
     return response.json();
@@ -69,6 +71,17 @@ export class ApiClient {
         created_at: string | null;
       }>
     >("/jobs");
+  }
+
+  async getJob(jobId: string) {
+    return this.request<{
+      job_id: string;
+      status: string;
+      progress: number;
+      output_url: string | null;
+      error: string | null;
+      created_at: string | null;
+    }>(`/jobs/${jobId}`);
   }
 
   async createCheckout(plan: string = "pro") {
@@ -170,6 +183,46 @@ export class ApiClient {
         body: JSON.stringify({ settings }),
       }
     );
+  }
+
+  private authHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {};
+    if (this.token) headers["Authorization"] = `Bearer ${this.token}`;
+    return headers;
+  }
+
+  async downloadShortVideo(jobId: string, filename = "viral-short.mp4") {
+    const response = await fetch(`${API_BASE}/shorts/${jobId}/download`, {
+      headers: this.authHeaders(),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: "Download failed" }));
+      throw new Error(parseApiError(error.detail, "Download failed"));
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async downloadDocumentary(jobId: string, filename = "documentary.mp4") {
+    const response = await fetch(`${API_BASE}/jobs/${jobId}/download`, {
+      headers: this.authHeaders(),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: "Download failed" }));
+      throw new Error(parseApiError(error.detail, "Download failed"));
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 }
 

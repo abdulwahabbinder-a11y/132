@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { api } from "@/lib/api";
 import { VideoGenerator } from "@/components/dashboard/VideoGenerator";
@@ -15,10 +16,13 @@ interface Subscription {
   billing_cycle_end: string | null;
 }
 
-export default function DashboardPage() {
+function DashboardContent() {
+  const searchParams = useSearchParams();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [checkoutMsg, setCheckoutMsg] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -26,7 +30,7 @@ export default function DashboardPage() {
       const { data: { session } } = await supabase.auth.getSession();
 
       if (!session) {
-        window.location.href = "/auth/login";
+        window.location.href = "/auth/login?redirect=/dashboard";
         return;
       }
 
@@ -34,14 +38,19 @@ export default function DashboardPage() {
       try {
         const sub = await api.getSubscription();
         setSubscription(sub);
+        setLoadError(null);
+        if (searchParams.get("checkout") === "success") {
+          setCheckoutMsg("Pro plan activated! Your credits have been updated.");
+        }
       } catch {
-        console.error("Failed to load subscription");
+        setLoadError("Failed to load subscription. Please refresh.");
+        setSubscription(null);
       } finally {
         setLoading(false);
       }
     }
     load();
-  }, [refreshKey]);
+  }, [refreshKey, searchParams]);
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -88,11 +97,30 @@ export default function DashboardPage() {
           </Link>
         </div>
 
+        {checkoutMsg && (
+          <div className="mb-6 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-300">
+            {checkoutMsg}
+          </div>
+        )}
+
+        {loadError && (
+          <div className="mb-6 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            {loadError}{" "}
+            <button
+              onClick={() => setRefreshKey((k) => k + 1)}
+              className="underline hover:text-red-200"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         <div className="grid gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-8">
             <VideoGenerator
               creditsLeft={subscription?.video_credits_left ?? 0}
               onGenerated={handleGenerated}
+              disabled={!!loadError}
             />
             <JobList refreshKey={refreshKey} />
           </div>
@@ -102,5 +130,17 @@ export default function DashboardPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
+      </div>
+    }>
+      <DashboardContent />
+    </Suspense>
   );
 }

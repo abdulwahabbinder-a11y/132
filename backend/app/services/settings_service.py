@@ -1,5 +1,6 @@
 import logging
 import time
+from datetime import datetime, timezone
 
 from app.config import get_settings
 from app.database import get_supabase
@@ -127,7 +128,7 @@ def update_platform_settings(updates: dict[str, str], updated_by: str) -> None:
         supabase.table("platform_settings").update(
             {
                 "value": stripped,
-                "updated_at": "now()",
+                "updated_at": datetime.now(timezone.utc).isoformat(),
                 "updated_by": updated_by,
             }
         ).eq("key", key).execute()

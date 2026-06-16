@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { api } from "@/lib/api";
+import { CREDITS_PER_VIDEO } from "@/lib/credits";
 import { cn } from "@/lib/utils";
 
 const PHASES = [
@@ -37,7 +38,7 @@ function phaseIndex(phase: string): number {
   return idx >= 0 ? idx : -1;
 }
 
-export function ViralShortWizard() {
+export function ViralShortWizard({ creditsLeft }: { creditsLeft?: number }) {
   const [topic, setTopic] = useState("");
   const [duration, setDuration] = useState(60);
   const [jobId, setJobId] = useState<string | null>(null);
@@ -46,8 +47,21 @@ export function ViralShortWizard() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [outputUrl, setOutputUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
   const [loading, setLoading] = useState(false);
   const logEndRef = useRef<HTMLDivElement>(null);
+
+  const insufficientCredits =
+    creditsLeft !== undefined && creditsLeft < CREDITS_PER_VIDEO;
+
+  const resetWizard = () => {
+    setJobId(null);
+    setPhase("idle");
+    setLogs([]);
+    setOutputUrl(null);
+    setProgress(0);
+    setError(null);
+  };
 
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -95,7 +109,7 @@ export function ViralShortWizard() {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        window.location.href = "/auth/login";
+        window.location.href = "/auth/login?redirect=/shorts/wizard";
         return;
       }
 
@@ -118,6 +132,22 @@ export function ViralShortWizard() {
       setError(err instanceof Error ? err.message : "Generation failed");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    if (!jobId) return;
+    setDownloading(true);
+    try {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      api.setToken(session.access_token);
+      await api.downloadShortVideo(jobId);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Download failed");
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -193,6 +223,11 @@ export function ViralShortWizard() {
       {/* Topic Form */}
       {!jobId && (
         <form onSubmit={handleGenerate} className="card mb-6">
+          {insufficientCredits && (
+            <p className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
+              Not enough credits ({CREDITS_PER_VIDEO} required per video).
+            </p>
+          )}
           <label className="mb-2 block text-sm text-white/70">What&apos;s your viral topic?</label>
           <input
             type="text"
@@ -222,7 +257,7 @@ export function ViralShortWizard() {
             </div>
           )}
 
-          <button type="submit" disabled={loading} className="btn-primary w-full gap-2">
+          <button type="submit" disabled={loading || insufficientCredits} className="btn-primary w-full gap-2">
             {loading ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -278,8 +313,7 @@ export function ViralShortWizard() {
         )}
       </AnimatePresence>
 
-      {/* Output */}
-      {outputUrl && (
+      {(outputUrl || phase === "completed") && phase !== "failed" && (
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -288,29 +322,31 @@ export function ViralShortWizard() {
           <CheckCircle2 className="mx-auto mb-4 h-12 w-12 text-green-500" />
           <h3 className="mb-2 text-xl font-bold">Your viral short is ready!</h3>
           <p className="mb-6 text-white/60">9:16 vertical MP4 with burned-in subtitles</p>
-          <a href={outputUrl} target="_blank" rel="noopener noreferrer" className="btn-primary gap-2">
-            <Download className="h-5 w-5" />
-            Download Video
-          </a>
           <button
-            onClick={() => {
-              setJobId(null);
-              setPhase("idle");
-              setLogs([]);
-              setOutputUrl(null);
-              setProgress(0);
-            }}
-            className="btn-secondary mt-4 block w-full"
+            onClick={handleDownload}
+            disabled={downloading}
+            className="btn-primary gap-2"
           >
+            {downloading ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Download className="h-5 w-5" />
+            )}
+            Download Video
+          </button>
+          <button onClick={resetWizard} className="btn-secondary mt-4 block w-full">
             Create Another
           </button>
         </motion.div>
       )}
 
-      {phase === "failed" && error && (
+      {(phase === "failed" || (error && jobId)) && (
         <div className="card mt-6 border-red-500/30 text-center">
           <AlertCircle className="mx-auto mb-4 h-12 w-12 text-red-500" />
-          <p className="text-red-400">{error}</p>
+          <p className="mb-4 text-red-400">{error || "Generation failed"}</p>
+          <button onClick={resetWizard} className="btn-secondary w-full">
+            Try Again
+          </button>
         </div>
       )}
     </div>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { isPlaceholderSupabase } from "@/lib/demo-auth";
 import { Film } from "lucide-react";
 import { CREDITS_PER_VIDEO, FREE_PLAN_CREDITS } from "@/lib/credits";
 
@@ -18,6 +19,14 @@ export default function SignupPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    if (isPlaceholderSupabase()) {
+      setError(
+        "Account signup requires a connected Supabase project. In preview mode, use Sign In with admin credentials."
+      );
+      setLoading(false);
+      return;
+    }
 
     const supabase = createClient();
     const { error: authError } = await supabase.auth.signUp({
@@ -64,7 +73,19 @@ export default function SignupPage() {
 
         <div className="card">
           <h1 className="mb-2 text-2xl font-bold">Create Account</h1>
-          <p className="mb-6 text-sm text-white/50">Start with 1 free video — {FREE_PLAN_CREDITS} credits ({CREDITS_PER_VIDEO} per render)</p>
+          <p className="mb-6 text-sm text-white/50">
+            Start with 1 free video — {FREE_PLAN_CREDITS} credits ({CREDITS_PER_VIDEO} per render)
+          </p>
+
+          {isPlaceholderSupabase() && (
+            <p className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+              Preview mode: signup is disabled until Supabase is configured.{" "}
+              <Link href="/auth/login" className="underline">
+                Sign in
+              </Link>{" "}
+              with admin credentials instead.
+            </p>
+          )}
 
           <form onSubmit={handleSignup} className="space-y-4">
             <div>

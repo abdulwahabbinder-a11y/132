@@ -9,9 +9,10 @@ import { CREDITS_PER_VIDEO, videosFromCredits } from "@/lib/credits";
 interface VideoGeneratorProps {
   creditsLeft: number;
   onGenerated: () => void;
+  disabled?: boolean;
 }
 
-export function VideoGenerator({ creditsLeft, onGenerated }: VideoGeneratorProps) {
+export function VideoGenerator({ creditsLeft, onGenerated, disabled }: VideoGeneratorProps) {
   const [topic, setTopic] = useState("");
   const [language, setLanguage] = useState("en");
   const [duration, setDuration] = useState(5);
@@ -132,7 +133,7 @@ export function VideoGenerator({ creditsLeft, onGenerated }: VideoGeneratorProps
 
         <button
           type="submit"
-          disabled={loading || creditsLeft < CREDITS_PER_VIDEO}
+          disabled={disabled || loading || creditsLeft < CREDITS_PER_VIDEO}
           className="btn-primary w-full gap-2 disabled:opacity-50"
         >
           {loading ? (

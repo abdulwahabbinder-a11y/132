@@ -6,6 +6,7 @@ from typing import Any
 import httpx
 
 from app.config import get_settings
+from app.services.settings_service import get_platform_setting
 from app.schemas.story import LocationCoordinates, SceneScript, StoryScript
 
 logger = logging.getLogger(__name__)
@@ -42,6 +43,7 @@ class NvidiaNIMClient:
         self.settings = get_settings()
         self.model = model
         self.base_url = self.settings.nvidia_nim_base_url
+        self.api_key = get_platform_setting("nvidia_nim_api_key") or self.settings.nvidia_nim_api_key
 
     async def chat_completion(
         self,
@@ -51,7 +53,7 @@ class NvidiaNIMClient:
         max_tokens: int = 4096,
     ) -> str:
         headers = {
-            "Authorization": f"Bearer {self.settings.nvidia_nim_api_key}",
+            "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
         }
         payload = {
