@@ -1,4 +1,4 @@
-# Docker Guide — DocuForge on Google Cloud
+# Docker Guide — DocuForge (AWS / GCP / local)
 
 Production Dockerfiles for **frontend** (Next.js) and **backend** (FastAPI + Celery worker).
 
@@ -6,11 +6,18 @@ Production Dockerfiles for **frontend** (Next.js) and **backend** (FastAPI + Cel
 
 | File | Purpose |
 |------|---------|
-| `frontend/Dockerfile` | Next.js standalone — optimized for Cloud Run (~150MB) |
+| `frontend/Dockerfile` | Next.js standalone — optimized for ECS/Cloud Run (~150MB) |
 | `backend/Dockerfile` | FastAPI + FFmpeg + Remotion (Node 20) — port 8080 |
-| `backend/worker_entrypoint.sh` | Celery worker with HTTP health check for Cloud Run |
+| `backend/worker_entrypoint.sh` | Celery worker with HTTP health check for Fargate/Cloud Run |
 | `docker-compose.prod.yml` | Test full stack locally before deploy |
 | `scripts/docker-build.sh` | One-command image build |
+
+## Deploy guides
+
+| Platform | Guide |
+|----------|-------|
+| **AWS ECS Fargate** | [deploy/aws/DEPLOY.md](aws/DEPLOY.md) |
+| Google Cloud Run | [deploy/gcp/DEPLOY.md](gcp/DEPLOY.md) |
 
 ---
 

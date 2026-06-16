@@ -1,0 +1,55 @@
+{
+  "family": "docuforge-worker",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "2048",
+  "memory": "4096",
+  "executionRoleArn": "__EXECUTION_ROLE_ARN__",
+  "taskRoleArn": "__TASK_ROLE_ARN__",
+  "containerDefinitions": [
+    {
+      "name": "worker",
+      "image": "__BACKEND_IMAGE__",
+      "essential": true,
+      "command": ["./worker_entrypoint.sh"],
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        { "name": "PORT", "value": "8080" },
+        { "name": "ASSET_STORAGE_PATH", "value": "/tmp/docuforge/assets" },
+        { "name": "OUTPUT_STORAGE_PATH", "value": "/tmp/docuforge/output" },
+        { "name": "REMOTION_PROJECT_DIR", "value": "/app/remotion" }
+      ],
+      "secrets": [
+        { "name": "SUPABASE_URL", "valueFrom": "__SECRET_ARN_PREFIX__:supabase-url::" },
+        { "name": "SUPABASE_SERVICE_KEY", "valueFrom": "__SECRET_ARN_PREFIX__:supabase-service-key::" },
+        { "name": "SUPABASE_JWT_SECRET", "valueFrom": "__SECRET_ARN_PREFIX__:supabase-jwt::" },
+        { "name": "REDIS_URL", "valueFrom": "__SECRET_ARN_PREFIX__:redis-url::" },
+        { "name": "NVIDIA_NIM_API_KEY", "valueFrom": "__SECRET_ARN_PREFIX__:nvidia-nim::" },
+        { "name": "ELEVENLABS_API_KEY", "valueFrom": "__SECRET_ARN_PREFIX__:elevenlabs::" },
+        { "name": "CLAUDE_API_KEY", "valueFrom": "__SECRET_ARN_PREFIX__:claude::" },
+        { "name": "TAVILY_API_KEY", "valueFrom": "__SECRET_ARN_PREFIX__:tavily::" },
+        { "name": "JINA_API_KEY", "valueFrom": "__SECRET_ARN_PREFIX__:jina::" }
+      ],
+      "healthCheck": {
+        "command": ["CMD-SHELL", "curl -f http://127.0.0.1:8080/ || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 60
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/docuforge-worker",
+          "awslogs-region": "__AWS_REGION__",
+          "awslogs-stream-prefix": "worker"
+        }
+      }
+    }
+  ]
+}

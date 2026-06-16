@@ -104,7 +104,7 @@ npm install
 npm start
 ```
 
-## Docker (Google Cloud / local)
+## Docker (AWS / GCP / local)
 
 Production Dockerfiles: `frontend/Dockerfile` + `backend/Dockerfile`
 
@@ -117,7 +117,11 @@ docker compose -f docker-compose.prod.yml up --build
 bash scripts/docker-build.sh
 ```
 
-Full guide: **[deploy/DOCKER.md](deploy/DOCKER.md)** | GCP deploy: **[deploy/gcp/DEPLOY.md](deploy/gcp/DEPLOY.md)**
+| Platform | Deploy guide |
+|----------|--------------|
+| **AWS (recommended)** | [deploy/aws/DEPLOY.md](deploy/aws/DEPLOY.md) |
+| Google Cloud | [deploy/gcp/DEPLOY.md](deploy/gcp/DEPLOY.md) |
+| Docker reference | [deploy/DOCKER.md](deploy/DOCKER.md) |
 
 ## API Endpoints
 
@@ -200,7 +204,25 @@ Run migration `supabase/migrations/002_vidrush_shorts_and_settings.sql`, then co
 
 ## Deploy to docuforge.pro
 
-### Google Cloud (recommended)
+### AWS (recommended)
+
+Full guide: **[deploy/aws/DEPLOY.md](deploy/aws/DEPLOY.md)**
+
+```bash
+export AWS_REGION=us-east-1
+export DOMAIN=docuforge.pro
+bash deploy/aws/setup-secrets.sh
+bash deploy/aws/setup-infrastructure.sh
+bash deploy/aws/deploy.sh
+bash deploy/aws/setup-domain.sh docuforge.pro
+```
+
+Deploys to **ECS Fargate** + ALB:
+- `docuforge-frontend` → `https://docuforge.pro`
+- `docuforge-api` → `https://api.docuforge.pro`
+- `docuforge-worker` → Celery video pipeline
+
+### Google Cloud (alternative)
 
 Full guide: **[deploy/gcp/DEPLOY.md](deploy/gcp/DEPLOY.md)**
 
@@ -211,10 +233,7 @@ bash deploy/gcp/deploy.sh $PROJECT_ID
 bash deploy/gcp/setup-domain.sh $PROJECT_ID docuforge.pro
 ```
 
-Deploys to **Cloud Run**:
-- `docuforge-frontend` → `https://docuforge.pro`
-- `docuforge-api` → `https://api.docuforge.pro`
-- `docuforge-worker` → Celery video pipeline
+Deploys to **Cloud Run** (same Docker images).
 
 ### Vercel (frontend only)
 

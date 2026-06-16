@@ -1,5 +1,5 @@
 # =============================================================================
-# DocuForge Frontend — Production Dockerfile (Google Cloud Run / Cloud Run)
+# DocuForge Frontend — Production Dockerfile (AWS ECS / GCP Cloud Run)
 # =============================================================================
 # Build:
 #   docker build -t docuforge-frontend ./frontend \

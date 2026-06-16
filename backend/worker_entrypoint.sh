@@ -1,6 +1,6 @@
 #!/bin/sh
-# Cloud Run requires an HTTP listener on $PORT. Celery does not expose HTTP,
-# so we run a minimal health server alongside the worker process.
+# ECS Fargate / Cloud Run require an HTTP listener on $PORT for health checks.
+# Celery does not expose HTTP, so we run a minimal health server alongside the worker.
 set -e
 
 PORT="${PORT:-8080}"

@@ -1,0 +1,245 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: DocuForge ECS Fargate infrastructure (ALB + cluster + ECR + logs)
+
+Parameters:
+  DomainName:
+    Type: String
+    Default: docuforge.pro
+    Description: Root domain (api subdomain serves the API)
+
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC for ECS tasks and ALB
+
+  PublicSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: At least two public subnets in different AZs for the ALB
+
+  PrivateSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Private subnets for Fargate tasks (use public subnets if no NAT)
+
+Resources:
+  EcrBackendRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: docuforge/backend
+      ImageScanningConfiguration:
+        ScanOnPush: true
+
+  EcrFrontendRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: docuforge/frontend
+      ImageScanningConfiguration:
+        ScanOnPush: true
+
+  EcsCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: docuforge
+      ClusterSettings:
+        - Name: containerInsights
+          Value: enabled
+
+  ApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/docuforge-api
+      RetentionInDays: 30
+
+  WorkerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/docuforge-worker
+      RetentionInDays: 30
+
+  FrontendLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/docuforge-frontend
+      RetentionInDays: 30
+
+  EcsTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: docuforge-ecs-execution
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+        - PolicyName: SecretsManagerRead
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:docuforge/*
+
+  EcsTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: docuforge-ecs-task
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+
+  AlbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: DocuForge ALB
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+  EcsSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: DocuForge ECS tasks
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          SourceSecurityGroupId: !Ref AlbSecurityGroup
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: docuforge-alb
+      Scheme: internet-facing
+      Type: application
+      Subnets: !Ref PublicSubnetIds
+      SecurityGroups:
+        - !Ref AlbSecurityGroup
+
+  ApiTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: docuforge-api
+      Port: 8080
+      Protocol: HTTP
+      VpcId: !Ref VpcId
+      TargetType: ip
+      HealthCheckEnabled: true
+      HealthCheckPath: /api/health
+      HealthCheckIntervalSeconds: 30
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
+      Matcher:
+        HttpCode: "200"
+
+  FrontendTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: docuforge-frontend
+      Port: 8080
+      Protocol: HTTP
+      VpcId: !Ref VpcId
+      TargetType: ip
+      HealthCheckEnabled: true
+      HealthCheckPath: /
+      HealthCheckIntervalSeconds: 30
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
+      Matcher:
+        HttpCode: "200"
+
+  HttpListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref FrontendTargetGroup
+
+  ApiListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref HttpListener
+      Priority: 10
+      Conditions:
+        - Field: host-header
+          HostHeaderConfig:
+            Values:
+              - !Sub api.${DomainName}
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref ApiTargetGroup
+
+Outputs:
+  ClusterName:
+    Value: !Ref EcsCluster
+    Export:
+      Name: DocuForgeClusterName
+
+  AlbDnsName:
+    Value: !GetAtt ApplicationLoadBalancer.DNSName
+    Export:
+      Name: DocuForgeAlbDns
+
+  ApiTargetGroupArn:
+    Value: !Ref ApiTargetGroup
+    Export:
+      Name: DocuForgeApiTargetGroupArn
+
+  FrontendTargetGroupArn:
+    Value: !Ref FrontendTargetGroup
+    Export:
+      Name: DocuForgeFrontendTargetGroupArn
+
+  EcsSecurityGroupId:
+    Value: !Ref EcsSecurityGroup
+    Export:
+      Name: DocuForgeEcsSecurityGroupId
+
+  PrivateSubnetIds:
+    Value: !Join [",", !Ref PrivateSubnetIds]
+    Export:
+      Name: DocuForgePrivateSubnetIds
+
+  EcrBackendUri:
+    Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrBackendRepository}
+    Export:
+      Name: DocuForgeEcrBackendUri
+
+  EcrFrontendUri:
+    Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrFrontendRepository}
+    Export:
+      Name: DocuForgeEcrFrontendUri
+
+  TaskExecutionRoleArn:
+    Value: !GetAtt EcsTaskExecutionRole.Arn
+    Export:
+      Name: DocuForgeTaskExecutionRoleArn
+
+  TaskRoleArn:
+    Value: !GetAtt EcsTaskRole.Arn
+    Export:
+      Name: DocuForgeTaskRoleArn

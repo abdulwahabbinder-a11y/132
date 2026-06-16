@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build frontend + backend Docker images for Google Cloud / local testing
+# Build frontend + backend Docker images for AWS ECR / GCP / local testing
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -25,9 +25,11 @@ echo ""
 echo "Test locally:"
 echo "  docker compose -f docker-compose.prod.yml up --build"
 echo ""
-echo "Push to Google Cloud:"
-echo "  export PROJECT_ID=your-project REGION=us-central1"
-echo "  docker tag docuforge-api:latest \${REGION}-docker.pkg.dev/\${PROJECT_ID}/docuforge/backend:latest"
-echo "  docker tag docuforge-frontend:latest \${REGION}-docker.pkg.dev/\${PROJECT_ID}/docuforge/frontend:latest"
-echo "  docker push \${REGION}-docker.pkg.dev/\${PROJECT_ID}/docuforge/backend:latest"
-echo "  docker push \${REGION}-docker.pkg.dev/\${PROJECT_ID}/docuforge/frontend:latest"
+echo "Deploy to AWS:"
+echo "  bash deploy/aws/setup-secrets.sh"
+echo "  bash deploy/aws/setup-infrastructure.sh"
+echo "  bash deploy/aws/deploy.sh"
+echo ""
+echo "Deploy to Google Cloud:"
+echo "  bash deploy/gcp/setup-secrets.sh YOUR_PROJECT_ID"
+echo "  bash deploy/gcp/deploy.sh YOUR_PROJECT_ID"
