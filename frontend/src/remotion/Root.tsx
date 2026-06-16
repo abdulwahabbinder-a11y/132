@@ -48,7 +48,9 @@ const defaultProps: DocumentaryCompositionProps = {
 export const RemotionRoot = () => (
   <Composition
     id="DocumentaryComposition"
-    component={DocumentaryComposition}
+    component={(props) => (
+      <DocumentaryComposition {...(props as unknown as DocumentaryCompositionProps)} />
+    )}
     durationInFrames={900}
     fps={30}
     width={2520}
