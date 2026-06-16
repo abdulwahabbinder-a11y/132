@@ -1,5 +1,6 @@
 "use client";
 
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { useEffect, useMemo, useState } from "react";
 
 import { fetchJobs, fetchSubscription, generateStory } from "@/lib/api";
@@ -19,16 +20,18 @@ function useAuthState() {
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
-    void supabase.auth.getSession().then(({ data }) => {
+    void supabase.auth
+      .getSession()
+      .then((result: { data: { session: Session | null } }) => {
       setState({
-        email: data.session?.user.email ?? null,
-        accessToken: data.session?.access_token ?? null,
+        email: result.data.session?.user.email ?? null,
+        accessToken: result.data.session?.access_token ?? null,
       });
-    });
+      });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
       setState({
         email: session?.user.email ?? null,
         accessToken: session?.access_token ?? null,
