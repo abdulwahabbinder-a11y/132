@@ -15,7 +15,9 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { api } from "@/lib/api";
+import { DurationSelector } from "@/components/create/DurationSelector";
 import { CREDITS_PER_VIDEO } from "@/lib/credits";
+import { defaultDurationForFormat } from "@/lib/video-duration";
 import { cn } from "@/lib/utils";
 
 const PHASES = [
@@ -40,7 +42,7 @@ function phaseIndex(phase: string): number {
 
 export function ViralShortWizard({ creditsLeft }: { creditsLeft?: number }) {
   const [topic, setTopic] = useState("");
-  const [duration, setDuration] = useState(60);
+  const [duration, setDuration] = useState(defaultDurationForFormat("viral"));
   const [jobId, setJobId] = useState<string | null>(null);
   const [phase, setPhase] = useState("idle");
   const [progress, setProgress] = useState(0);
@@ -239,16 +241,15 @@ export function ViralShortWizard({ creditsLeft }: { creditsLeft?: number }) {
             className="mb-4 w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-brand-500 focus:outline-none"
           />
 
-          <label className="mb-2 block text-sm text-white/70">Duration (seconds)</label>
-          <input
-            type="range"
-            min={15}
-            max={90}
-            value={duration}
-            onChange={(e) => setDuration(Number(e.target.value))}
-            className="mb-2 w-full accent-brand-500"
-          />
-          <p className="mb-6 text-sm text-white/40">{duration}s vertical short</p>
+          <div className="mb-6">
+            <DurationSelector
+              format="viral"
+              value={duration}
+              onChange={setDuration}
+              variant="card"
+              className="border-white/10 bg-white/[0.02]"
+            />
+          </div>
 
           {error && (
             <div className="mb-4 flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">

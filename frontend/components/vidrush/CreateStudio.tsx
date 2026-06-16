@@ -14,23 +14,21 @@ import {
   Sparkles,
   Video,
   AlertCircle,
-  Clock,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { api } from "@/lib/api";
+import { DurationSelector } from "@/components/create/DurationSelector";
 import { CREDITS_PER_VIDEO } from "@/lib/credits";
+import {
+  defaultDurationForFormat,
+  type VideoFormat,
+} from "@/lib/video-duration";
 import { cn } from "@/lib/utils";
 
-const FORMATS = [
-  { id: "viral", label: "Viral Short", desc: "9:16 TikTok/Reels", duration: 60 },
-  { id: "documentary", label: "Documentary", desc: "21:9 cinematic", duration: 300 },
-  { id: "listicle", label: "Listicle", desc: "Top 10 style", duration: 180 },
-];
-
-const DURATIONS = [
-  { value: 30, label: "30 sec" },
-  { value: 60, label: "1 min" },
-  { value: 90, label: "90 sec" },
+const FORMATS: { id: VideoFormat; label: string; desc: string }[] = [
+  { id: "viral", label: "Viral Short", desc: "9:16 TikTok/Reels" },
+  { id: "documentary", label: "Documentary", desc: "21:9 cinematic" },
+  { id: "listicle", label: "Listicle", desc: "Top 10 style" },
 ];
 
 const PHASES = [
@@ -55,8 +53,8 @@ interface CreateStudioProps {
 
 export function CreateStudio({ creditsLeft, onCreditsChange }: CreateStudioProps) {
   const [prompt, setPrompt] = useState("");
-  const [format, setFormat] = useState("viral");
-  const [duration, setDuration] = useState(60);
+  const [format, setFormat] = useState<VideoFormat>("viral");
+  const [duration, setDuration] = useState(defaultDurationForFormat("viral"));
   const [jobId, setJobId] = useState<string | null>(null);
   const [docJobId, setDocJobId] = useState<string | null>(null);
   const [phase, setPhase] = useState("idle");
@@ -158,7 +156,7 @@ export function CreateStudio({ creditsLeft, onCreditsChange }: CreateStudioProps
         const result = await api.generateStory({
           topic: prompt,
           language: "en",
-          duration_minutes: Math.max(1, Math.ceil(duration / 60)),
+          duration_minutes: duration,
           style: format === "listicle" ? "listicle" : "vox",
         });
         setDocJobId(result.job_id);
@@ -384,7 +382,7 @@ export function CreateStudio({ creditsLeft, onCreditsChange }: CreateStudioProps
                     key={f.id}
                     onClick={() => {
                       setFormat(f.id);
-                      setDuration(f.duration);
+                      setDuration(defaultDurationForFormat(f.id));
                     }}
                     className={cn(
                       "rounded-lg px-2.5 py-1 text-[11px] font-medium transition",
@@ -397,24 +395,6 @@ export function CreateStudio({ creditsLeft, onCreditsChange }: CreateStudioProps
                   </button>
                 ))}
               </div>
-
-              {format === "viral" && (
-                <div className="flex items-center gap-1 border-l border-white/10 pl-2">
-                  <Clock className="h-3 w-3 text-white/30" />
-                  {DURATIONS.map((d) => (
-                    <button
-                      key={d.value}
-                      onClick={() => setDuration(d.value)}
-                      className={cn(
-                        "rounded px-2 py-0.5 text-[11px] transition",
-                        duration === d.value ? "bg-white/10 text-white" : "text-white/30 hover:text-white/60"
-                      )}
-                    >
-                      {d.label}
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
 
             <button
@@ -426,6 +406,14 @@ export function CreateStudio({ creditsLeft, onCreditsChange }: CreateStudioProps
             </button>
           </div>
         </div>
+
+        <DurationSelector
+          format={format}
+          value={duration}
+          onChange={setDuration}
+          variant="card"
+          className="mt-4"
+        />
 
         {error && <p className="mt-3 text-center text-sm text-red-400">{error}</p>}
 

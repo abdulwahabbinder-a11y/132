@@ -4,7 +4,9 @@ import { useState } from "react";
 import { Loader2, Wand2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { api } from "@/lib/api";
+import { DurationSelector } from "@/components/create/DurationSelector";
 import { CREDITS_PER_VIDEO, videosFromCredits } from "@/lib/credits";
+import { defaultDurationForFormat } from "@/lib/video-duration";
 
 interface VideoGeneratorProps {
   creditsLeft: number;
@@ -15,7 +17,7 @@ interface VideoGeneratorProps {
 export function VideoGenerator({ creditsLeft, onGenerated, disabled }: VideoGeneratorProps) {
   const [topic, setTopic] = useState("");
   const [language, setLanguage] = useState("en");
-  const [duration, setDuration] = useState(5);
+  const [duration, setDuration] = useState(defaultDurationForFormat("documentary"));
   const [style, setStyle] = useState("vox");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -94,18 +96,6 @@ export function VideoGenerator({ creditsLeft, onGenerated, disabled }: VideoGene
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm text-white/70">Duration (min)</label>
-            <input
-              type="number"
-              value={duration}
-              onChange={(e) => setDuration(Number(e.target.value))}
-              min={1}
-              max={30}
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white focus:border-brand-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
             <label className="mb-1.5 block text-sm text-white/70">Style</label>
             <select
               value={style}
@@ -118,6 +108,14 @@ export function VideoGenerator({ creditsLeft, onGenerated, disabled }: VideoGene
             </select>
           </div>
         </div>
+
+        <DurationSelector
+          format="documentary"
+          value={duration}
+          onChange={setDuration}
+          variant="card"
+          className="border-white/10 bg-white/[0.02]"
+        />
 
         {error && (
           <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
