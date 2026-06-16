@@ -1,0 +1,25 @@
+{
+  "name": "docuforge-remotion",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "remotion studio src/index.ts",
+    "render": "remotion render src/index.ts DocumentaryVideo out/video.mp4",
+    "upgrade": "remotion upgrade",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/google-fonts": "4.0.250",
+    "@remotion/media-utils": "4.0.250",
+    "@remotion/shapes": "4.0.250",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "4.0.250"
+  },
+  "devDependencies": {
+    "@remotion/cli": "4.0.250",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "typescript": "^5.7.2"
+  }
+}
