@@ -11,7 +11,7 @@ export default function RefundPolicyPage() {
       </section>
       <section>
         <h2 className="text-xl font-semibold text-white">2. 7-Day Money-Back Guarantee</h2>
-        <p>New Pro subscribers may request a full refund within <strong>7 days</strong> of their first payment if they have used fewer than 3 video credits. Contact support@docuforge.ai with your account email.</p>
+        <p>New Pro subscribers may request a full refund within <strong>7 days</strong> of their first payment if they have used fewer than 3 video credits. Contact support@docuforge.pro with your account email.</p>
       </section>
       <section>
         <h2 className="text-xl font-semibold text-white">3. Non-Refundable Items</h2>
@@ -32,7 +32,7 @@ export default function RefundPolicyPage() {
       </section>
       <section>
         <h2 className="text-xl font-semibold text-white">6. How to Request a Refund</h2>
-        <p>Email <a href="mailto:support@docuforge.ai" className="text-violet-400 hover:underline">support@docuforge.ai</a> with your account email, payment date, and reason. We respond within 2 business days. Approved refunds are processed within 5–10 business days to your original payment method.</p>
+        <p>Email <a href="mailto:support@docuforge.pro" className="text-violet-400 hover:underline">support@docuforge.pro</a> with your account email, payment date, and reason. We respond within 2 business days. Approved refunds are processed within 5–10 business days to your original payment method.</p>
       </section>
     </LegalPageLayout>
   );

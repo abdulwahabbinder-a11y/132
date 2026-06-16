@@ -63,7 +63,7 @@ export function Footer() {
             <div className="mb-6 space-y-2.5 text-sm text-white/40">
               <p className="flex items-center gap-2.5">
                 <Mail className="h-4 w-4 shrink-0 text-violet-400" />
-                support@docuforge.ai
+                support@docuforge.pro
               </p>
               <p className="flex items-center gap-2.5">
                 <MapPin className="h-4 w-4 shrink-0 text-violet-400" />

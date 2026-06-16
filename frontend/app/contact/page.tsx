@@ -23,8 +23,8 @@ export default function ContactPage() {
           </p>
           <div className="space-y-4">
             {[
-              { icon: Mail, label: "Email", value: "support@docuforge.ai" },
-              { icon: MessageSquare, label: "Sales", value: "sales@docuforge.ai" },
+              { icon: Mail, label: "Email", value: "support@docuforge.pro" },
+              { icon: MessageSquare, label: "Sales", value: "support@docuforge.pro" },
               { icon: MapPin, label: "Office", value: "San Francisco, CA" },
             ].map(({ icon: Icon, label, value }) => (
               <div key={label} className="flex items-center gap-3">

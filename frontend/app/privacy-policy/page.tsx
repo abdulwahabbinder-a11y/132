@@ -43,11 +43,11 @@ export default function PrivacyPolicyPage() {
       </section>
       <section>
         <h2 className="text-xl font-semibold text-white">6. Your Rights</h2>
-        <p>You may request access, correction, or deletion of your personal data by contacting us at privacy@docuforge.ai. EU/UK residents have additional rights under GDPR.</p>
+        <p>You may request access, correction, or deletion of your personal data by contacting us at support@docuforge.pro. EU/UK residents have additional rights under GDPR.</p>
       </section>
       <section>
         <h2 className="text-xl font-semibold text-white">7. Contact</h2>
-        <p>Questions about this policy? Email <a href="mailto:privacy@docuforge.ai" className="text-violet-400 hover:underline">privacy@docuforge.ai</a> or visit our <a href="/contact" className="text-violet-400 hover:underline">Contact page</a>.</p>
+        <p>Questions about this policy? Email <a href="mailto:support@docuforge.pro" className="text-violet-400 hover:underline">support@docuforge.pro</a> or visit our <a href="/contact" className="text-violet-400 hover:underline">Contact page</a>.</p>
       </section>
     </LegalPageLayout>
   );

@@ -113,8 +113,8 @@ export default function AboutPage() {
           Have questions or want a demo? Visit our{" "}
           <Link href="/contact" className="text-violet-400 hover:underline">Contact page</Link>{" "}
           or email{" "}
-          <a href="mailto:support@docuforge.ai" className="text-violet-400 hover:underline">
-            support@docuforge.ai
+          <a href="mailto:support@docuforge.pro" className="text-violet-400 hover:underline">
+            support@docuforge.pro
           </a>.
         </p>
       </section>

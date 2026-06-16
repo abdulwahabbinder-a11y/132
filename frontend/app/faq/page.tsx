@@ -36,7 +36,7 @@ const faqs = [
   },
   {
     q: "How do I cancel my subscription?",
-    a: "Cancel anytime from your dashboard or email support@docuforge.ai. Access continues until the end of your billing period.",
+    a: "Cancel anytime from your dashboard or email support@docuforge.pro. Access continues until the end of your billing period.",
   },
   {
     q: "Do you offer refunds?",
