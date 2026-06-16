@@ -18,6 +18,7 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 # Copy application code
 COPY . .
+RUN chmod +x worker_entrypoint.sh
 
 ENV PYTHONPATH=/app \
     PYTHONUNBUFFERED=1 \
@@ -25,5 +26,5 @@ ENV PYTHONPATH=/app \
 
 EXPOSE 8080
 
-# Production ASGI server
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "1"]
+# Cloud Run sets PORT; uvicorn reads it via shell
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080} --workers 1"]

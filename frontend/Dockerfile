@@ -2,21 +2,29 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# libc compatibility for some Next.js native deps on Alpine
 RUN apk add --no-cache libc6-compat
 
-# Install dependencies
+# Build-time public env (required for Next.js static bundle)
+ARG NEXT_PUBLIC_SITE_URL=https://docuforge.pro
+ARG NEXT_PUBLIC_API_URL=https://api.docuforge.pro/api
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL \
+    NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+    NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
+
 COPY package.json package-lock.json* ./
 RUN npm ci
 
-# Copy source and build for production
 COPY . .
 RUN npm run build
 
 ENV NODE_ENV=production \
-    HOSTNAME=0.0.0.0 \
-    PORT=3000
+    HOSTNAME=0.0.0.0
 
-EXPOSE 3000
+# Cloud Run sets PORT=8080 automatically; Next.js reads process.env.PORT
+EXPOSE 8080
 
 CMD ["npm", "start"]

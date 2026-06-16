@@ -185,7 +185,23 @@ Run migration `supabase/migrations/002_vidrush_shorts_and_settings.sql`, then co
 
 ## Deploy to docuforge.pro
 
-### Vercel (recommended for frontend)
+### Google Cloud (recommended)
+
+Full guide: **[deploy/gcp/DEPLOY.md](deploy/gcp/DEPLOY.md)**
+
+```bash
+export PROJECT_ID=your-gcp-project-id
+bash deploy/gcp/setup-secrets.sh $PROJECT_ID
+bash deploy/gcp/deploy.sh $PROJECT_ID
+bash deploy/gcp/setup-domain.sh $PROJECT_ID docuforge.pro
+```
+
+Deploys to **Cloud Run**:
+- `docuforge-frontend` → `https://docuforge.pro`
+- `docuforge-api` → `https://api.docuforge.pro`
+- `docuforge-worker` → Celery video pipeline
+
+### Vercel (frontend only)
 
 1. Import the repo on [Vercel](https://vercel.com) and set **Root Directory** to `frontend`
 2. Add environment variables:
