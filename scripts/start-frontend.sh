@@ -6,7 +6,11 @@ cd "$(dirname "$0")/../frontend"
 # Stop stale Next.js processes that cause 404 on CSS/JS bundles
 pkill -f "next dev" 2>/dev/null || true
 pkill -f "next start" 2>/dev/null || true
+pkill -f "next-server" 2>/dev/null || true
 sleep 1
+
+# Clear corrupted cache when switching between dev/build modes
+rm -rf .next
 
 if [ ! -d node_modules ]; then
   echo "Installing dependencies..."
