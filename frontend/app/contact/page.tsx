@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { LegalPageLayout } from "@/components/legal/LegalPageLayout";
-import { Mail, MessageSquare, MapPin, Send, CheckCircle2 } from "lucide-react";
+import { Mail, MessageSquare, MapPin, Send, CheckCircle2, Globe } from "lucide-react";
+import { SITE } from "@/lib/site";
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
@@ -23,8 +24,9 @@ export default function ContactPage() {
           </p>
           <div className="space-y-4">
             {[
-              { icon: Mail, label: "Email", value: "support@docuforge.pro" },
-              { icon: MessageSquare, label: "Sales", value: "support@docuforge.pro" },
+              { icon: Globe, label: "Website", value: SITE.url },
+              { icon: Mail, label: "Email", value: SITE.email },
+              { icon: MessageSquare, label: "Sales", value: SITE.email },
               { icon: MapPin, label: "Office", value: "San Francisco, CA" },
             ].map(({ icon: Icon, label, value }) => (
               <div key={label} className="flex items-center gap-3">

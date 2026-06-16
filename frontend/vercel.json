@@ -1,0 +1,11 @@
+{
+  "framework": "nextjs",
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.docuforge.pro" }],
+      "destination": "https://docuforge.pro/:path*",
+      "permanent": true
+    }
+  ]
+}

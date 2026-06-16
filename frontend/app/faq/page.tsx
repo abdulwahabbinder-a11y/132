@@ -4,6 +4,7 @@ import { useState } from "react";
 import { LegalPageLayout } from "@/components/legal/LegalPageLayout";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SITE } from "@/lib/site";
 
 const faqs = [
   {
@@ -36,7 +37,7 @@ const faqs = [
   },
   {
     q: "How do I cancel my subscription?",
-    a: "Cancel anytime from your dashboard or email support@docuforge.pro. Access continues until the end of your billing period.",
+    a: `Cancel anytime from your dashboard or email ${SITE.email}. Access continues until the end of your billing period.`,
   },
   {
     q: "Do you offer refunds?",

@@ -65,8 +65,8 @@ async def create_checkout_session(
         customer=customer_id,
         mode="subscription",
         line_items=[{"price": settings.stripe_pro_price_id, "quantity": 1}],
-        success_url=f"{settings.cors_origins.split(',')[0]}/dashboard?checkout=success",
-        cancel_url=f"{settings.cors_origins.split(',')[0]}/pricing?checkout=cancelled",
+        success_url=f"{settings.frontend_url}/dashboard?checkout=success",
+        cancel_url=f"{settings.frontend_url}/#pricing?checkout=cancelled",
         metadata={"user_id": str(user_id)},
     )
 

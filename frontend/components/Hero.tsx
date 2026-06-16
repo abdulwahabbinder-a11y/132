@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { SITE } from "@/lib/site";
 import {
   Play, Sparkles, Globe, Video, ArrowRight, CheckCircle2,
   Clock, Shield, Zap,
@@ -98,7 +99,7 @@ export function Hero() {
                   <div className="h-2.5 w-2.5 rounded-full bg-green-500/60" />
                 </div>
                 <span className="ml-2 flex-1 rounded-md bg-white/5 px-3 py-1 text-center text-[10px] text-white/30">
-                  app.docuforge.ai/create
+                  {SITE.domain}{SITE.appPath}
                 </span>
               </div>
               <div className="p-5">

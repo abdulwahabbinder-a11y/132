@@ -9,7 +9,8 @@ class Settings(BaseSettings):
     app_name: str = "DocuForge AI"
     debug: bool = False
     api_prefix: str = "/api"
-    cors_origins: str = "http://localhost:3000"
+    cors_origins: str = "http://localhost:3000,https://docuforge.pro,https://www.docuforge.pro"
+    frontend_url: str = "https://docuforge.pro"
 
     # Supabase
     supabase_url: str = ""

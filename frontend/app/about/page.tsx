@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { LegalPageLayout } from "@/components/legal/LegalPageLayout";
 import { Target, Users, Zap, Globe, Shield, Layers } from "lucide-react";
+import { SITE } from "@/lib/site";
 
 export const metadata = { title: "About Us — DocuForge AI" };
 
@@ -113,8 +114,8 @@ export default function AboutPage() {
           Have questions or want a demo? Visit our{" "}
           <Link href="/contact" className="text-violet-400 hover:underline">Contact page</Link>{" "}
           or email{" "}
-          <a href="mailto:support@docuforge.pro" className="text-violet-400 hover:underline">
-            support@docuforge.pro
+          <a href={`mailto:${SITE.email}`} className="text-violet-400 hover:underline">
+            {SITE.email}
           </a>.
         </p>
       </section>

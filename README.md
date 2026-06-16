@@ -183,6 +183,35 @@ Run migration `supabase/migrations/002_vidrush_shorts_and_settings.sql`, then co
 └── .env.example
 ```
 
+## Deploy to docuforge.pro
+
+### Vercel (recommended for frontend)
+
+1. Import the repo on [Vercel](https://vercel.com) and set **Root Directory** to `frontend`
+2. Add environment variables:
+   - `NEXT_PUBLIC_SITE_URL=https://docuforge.pro`
+   - `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `NEXT_PUBLIC_API_URL=https://api.docuforge.pro/api` (or your backend URL)
+3. In your domain registrar, add DNS records for `docuforge.pro`:
+   - **A** or **CNAME** pointing to Vercel (Vercel dashboard shows exact values)
+   - Optional: `www` → redirects to apex via `frontend/vercel.json`
+4. In Vercel → **Domains**, add `docuforge.pro` and `www.docuforge.pro`
+
+### Backend + Stripe
+
+Set in production `.env`:
+
+```bash
+FRONTEND_URL=https://docuforge.pro
+CORS_ORIGINS=https://docuforge.pro,https://www.docuforge.pro
+```
+
+Update Stripe webhook URL to your production API, e.g. `https://api.docuforge.pro/api/webhooks/stripe`.
+
+### Email (support@docuforge.pro)
+
+Configure MX records at your domain registrar (Google Workspace, Zoho, Cloudflare Email, etc.) so `support@docuforge.pro` receives mail.
+
 ## Stripe Webhook Setup
 
 1. Create a Stripe product with a $29/month recurring price

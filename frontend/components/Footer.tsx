@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Clapperboard, Mail, MapPin, Twitter, Github, Linkedin } from "lucide-react";
+import { SITE } from "@/lib/site";
 
 const footerLinks = {
   product: [
@@ -57,13 +58,13 @@ export function Footer() {
               <span className="font-display text-lg font-bold">DocuForge AI</span>
             </Link>
             <p className="mb-6 max-w-xs text-sm leading-relaxed text-white/40">
-              The AI video production platform that researches, scripts, narrates, and
-              renders premium documentaries and viral shorts from a single topic prompt.
+              The AI video production platform at {SITE.domain} — researches, scripts, narrates,
+              and renders premium documentaries and viral shorts from a single topic prompt.
             </p>
             <div className="mb-6 space-y-2.5 text-sm text-white/40">
               <p className="flex items-center gap-2.5">
                 <Mail className="h-4 w-4 shrink-0 text-violet-400" />
-                support@docuforge.pro
+                {SITE.email}
               </p>
               <p className="flex items-center gap-2.5">
                 <MapPin className="h-4 w-4 shrink-0 text-violet-400" />
@@ -99,7 +100,7 @@ export function Footer() {
 
         <div className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-white/[0.06] pt-8 md:flex-row">
           <p className="text-xs text-white/25">
-            &copy; {new Date().getFullYear()} DocuForge AI, Inc. All rights reserved.
+            &copy; {new Date().getFullYear()} {SITE.legalName}. All rights reserved.
           </p>
           <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs text-white/25">
             <Link href="/privacy-policy" className="hover:text-white/50">Privacy</Link>

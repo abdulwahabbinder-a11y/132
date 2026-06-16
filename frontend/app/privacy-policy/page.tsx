@@ -1,4 +1,5 @@
 import { LegalPageLayout } from "@/components/legal/LegalPageLayout";
+import { SITE } from "@/lib/site";
 
 export const metadata = { title: "Privacy Policy — DocuForge AI" };
 
@@ -10,7 +11,7 @@ export default function PrivacyPolicyPage() {
         <p>
           DocuForge AI (&ldquo;we,&rdquo; &ldquo;our,&rdquo; or &ldquo;us&rdquo;) respects your privacy. This Privacy Policy
           explains how we collect, use, disclose, and safeguard your information when you use our
-          AI video generation platform at docuforge.ai.
+          AI video generation platform at {SITE.domain}.
         </p>
       </section>
       <section>
@@ -43,11 +44,11 @@ export default function PrivacyPolicyPage() {
       </section>
       <section>
         <h2 className="text-xl font-semibold text-white">6. Your Rights</h2>
-        <p>You may request access, correction, or deletion of your personal data by contacting us at support@docuforge.pro. EU/UK residents have additional rights under GDPR.</p>
+        <p>You may request access, correction, or deletion of your personal data by contacting us at {SITE.email}. EU/UK residents have additional rights under GDPR.</p>
       </section>
       <section>
         <h2 className="text-xl font-semibold text-white">7. Contact</h2>
-        <p>Questions about this policy? Email <a href="mailto:support@docuforge.pro" className="text-violet-400 hover:underline">support@docuforge.pro</a> or visit our <a href="/contact" className="text-violet-400 hover:underline">Contact page</a>.</p>
+        <p>Questions about this policy? Email <a href={`mailto:${SITE.email}`} className="text-violet-400 hover:underline">{SITE.email}</a> or visit our <a href="/contact" className="text-violet-400 hover:underline">Contact page</a>.</p>
       </section>
     </LegalPageLayout>
   );

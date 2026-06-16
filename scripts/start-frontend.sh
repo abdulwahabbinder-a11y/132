@@ -22,6 +22,7 @@ if [ ! -f .env.local ]; then
   cat > .env.local <<'EOF'
 NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder
+NEXT_PUBLIC_SITE_URL=https://docuforge.pro
 NEXT_PUBLIC_API_URL=http://localhost:8080/api
 EOF
 fi

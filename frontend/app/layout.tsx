@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { SITE } from "@/lib/site";
 import "./globals.css";
 
 const inter = Inter({
@@ -16,14 +17,20 @@ const display = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "DocuForge AI — AI Video Production Platform",
+  metadataBase: new URL(SITE.url),
+  title: "DocuForge — AI Video Production Platform",
   description:
     "Transform any topic into viral shorts and cinematic documentaries. 10+ live data sources, Claude AI research, ElevenLabs voice, Flux visuals, Remotion rendering.",
   keywords: ["AI video generator", "documentary maker", "viral shorts", "TikTok video AI"],
   openGraph: {
-    title: "DocuForge AI — Turn Topics Into Viral Videos",
+    title: "DocuForge — Turn Topics Into Viral Videos",
     description: "Automated AI video production from research to final MP4.",
     type: "website",
+    url: SITE.url,
+    siteName: SITE.name,
+  },
+  alternates: {
+    canonical: SITE.url,
   },
 };
 
