@@ -48,8 +48,8 @@ export function GenerateForm({ onCreated }: { onCreated: () => void }) {
     <form onSubmit={submit} className="card p-6">
       <h2 className="font-display text-xl font-bold">New documentary</h2>
       <p className="mt-1 text-sm text-slate-400">
-        Describe a topic. We'll script, source media, narrate, and render a 21:9
-        cinematic video.
+        Describe a topic. We will script, source media, narrate, and render a
+        21:9 cinematic video.
       </p>
 
       <label className="mt-5 block text-sm font-medium text-slate-300">
