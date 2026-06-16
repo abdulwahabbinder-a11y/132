@@ -1,0 +1,23 @@
+{
+  "name": "@docgen/video-composer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "render": "tsx render.mts"
+  },
+  "dependencies": {
+    "@remotion/bundler": "latest",
+    "@remotion/renderer": "latest",
+    "motion": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "remotion": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "tsx": "latest",
+    "typescript": "latest"
+  }
+}

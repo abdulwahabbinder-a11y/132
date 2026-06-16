@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "docgen-api"
+version = "0.1.0"
+description = "FastAPI backend for the AI Documentary Video Generator SaaS"
+requires-python = ">=3.12"
+dependencies = [
+  "aiofiles",
+  "asyncpg",
+  "fastapi",
+  "httpx",
+  "orjson",
+  "pydantic[email]",
+  "pydantic-settings",
+  "python-jose[cryptography]",
+  "python-multipart",
+  "sqlalchemy>=2.0",
+  "stripe",
+  "supabase",
+  "tenacity",
+  "uvicorn[standard]"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "pytest-asyncio",
+  "ruff"
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
