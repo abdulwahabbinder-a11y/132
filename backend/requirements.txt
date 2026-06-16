@@ -1,0 +1,41 @@
+# ----- Web framework -----
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+
+# ----- Config / validation -----
+pydantic==2.10.4
+pydantic-settings==2.7.1
+email-validator==2.2.0
+
+# ----- Auth / security -----
+PyJWT==2.10.1
+cryptography==44.0.0
+
+# ----- Database / Supabase -----
+supabase==2.11.0
+sqlalchemy==2.0.36
+psycopg2-binary==2.9.10
+asyncpg==0.30.0
+
+# ----- HTTP clients -----
+httpx==0.28.1
+aiohttp==3.11.11
+tenacity==9.0.0
+
+# ----- Billing -----
+stripe==11.4.1
+
+# ----- Async pipeline -----
+celery==5.4.0
+redis==5.2.1
+
+# ----- Media / scraping helpers -----
+beautifulsoup4==4.12.3
+lxml==5.3.0
+Wikipedia-API==0.7.1
+
+# ----- Utility -----
+python-slugify==8.0.4
+structlog==24.4.0
+tenacity==9.0.0

@@ -1,0 +1,38 @@
+# ----- Env / secrets -----
+.env
+.env.local
+*.env.local
+.env.*.local
+
+# ----- Python -----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ----- Node -----
+node_modules/
+.next/
+out/
+dist/
+.turbo/
+npm-debug.log*
+yarn-error.log*
+
+# ----- Remotion / rendering artifacts -----
+remotion/out/
+storage/
+*.mp4
+*.mp3
+*.wav
+!**/fixtures/**/*.mp3
+
+# ----- OS / editor -----
+.DS_Store
+.idea/
+.vscode/
+*.swp
