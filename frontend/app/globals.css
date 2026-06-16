@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+  background-color: #05060a;
+  color: #f4f4f6;
+  font-family: "Inter", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.glass {
+  background: rgba(15, 17, 28, 0.6);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.btn {
+  @apply inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-semibold transition;
+}
+
+.btn-primary {
+  @apply btn bg-accent text-black hover:bg-accent-soft;
+}
+
+.btn-ghost {
+  @apply btn border border-white/15 text-white hover:bg-white/5;
+}

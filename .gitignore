@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+.next/
+out/
+dist/
+.turbo/
+
+# Remotion
+remotion/out/
+remotion/.cache/
+
+# Environment
+.env
+.env.local
+.env.*.local
+*.env
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Build artefacts
+*.log
+*.mp4
+*.mp3
+*.wav
+backend/storage/
+backend/tmp/
+storage/
+tmp/

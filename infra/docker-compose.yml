@@ -1,0 +1,73 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: docugen
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    env_file: ../.env
+    depends_on: [db, redis]
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../backend:/app
+      - ../storage:/app/storage
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  worker:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    env_file: ../.env
+    depends_on: [db, redis, backend]
+    volumes:
+      - ../backend:/app
+      - ../storage:/app/storage
+    command: celery -A app.workers.celery_app.celery worker --loglevel=info --concurrency=2
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    env_file: ../.env
+    depends_on: [backend]
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+    command: npm run dev
+
+  remotion:
+    build:
+      context: ../remotion
+      dockerfile: Dockerfile
+    env_file: ../.env
+    depends_on: [backend]
+    ports:
+      - "3001:3000"
+    volumes:
+      - ../remotion:/app
+      - /app/node_modules
+    command: npx remotion studio
+
+volumes:
+  db-data:
