@@ -5,6 +5,14 @@ import { Check, Loader2, Zap, Crown, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import {
+  CREDITS_PER_VIDEO,
+  FREE_PLAN_CREDITS,
+  FREE_PLAN_VIDEOS,
+  PRO_PLAN_CREDITS,
+  PRO_PLAN_VIDEOS,
+  proPricePerVideo,
+} from "@/lib/credits";
 
 const plans = [
   {
@@ -12,12 +20,14 @@ const plans = [
     name: "Starter",
     price: "$0",
     period: "forever",
-    description: "Perfect for trying DocuForge and creating your first viral shorts.",
-    credits: 3,
+    description: "Try DocuForge with one complete video — no card required.",
+    credits: FREE_PLAN_CREDITS,
+    videos: FREE_PLAN_VIDEOS,
     perVideo: "Free",
     icon: Sparkles,
     features: [
-      "3 video credits (one-time)",
+      `${FREE_PLAN_VIDEOS} video render (${FREE_PLAN_CREDITS} credits)`,
+      `${CREDITS_PER_VIDEO} credits deducted per video`,
       "Viral Short 9:16 format",
       "English scripting (Llama 3.1)",
       "5 scrapers (Tavily, Jina, Wikipedia + more)",
@@ -26,7 +36,7 @@ const plans = [
       "Community support",
     ],
     notIncluded: ["Documentary 21:9 format", "Claude research brief", "DeepVideo characters", "Priority queue"],
-    cta: "Get Started Free",
+    cta: "Get Started Free — 1 Video",
     highlighted: false,
   },
   {
@@ -34,12 +44,14 @@ const plans = [
     name: "Pro",
     price: "$29",
     period: "/month",
-    description: "For serious creators publishing weekly content across platforms.",
-    credits: 30,
-    perVideo: "$0.97",
+    description: "Publish weekly — 6 full video renders every month.",
+    credits: PRO_PLAN_CREDITS,
+    videos: PRO_PLAN_VIDEOS,
+    perVideo: proPricePerVideo(),
     icon: Crown,
     features: [
-      "30 video credits per month",
+      `${PRO_PLAN_VIDEOS} video renders per month (${PRO_PLAN_CREDITS} credits)`,
+      `${CREDITS_PER_VIDEO} credits per video render`,
       "All formats: Viral Short + Documentary + Listicle",
       "All 10+ scrapers with parallel research",
       "Claude AI research brief synthesis",
@@ -85,8 +97,8 @@ export function PricingSection() {
           <p className="section-label">Pricing</p>
           <h2 className="section-title mb-4">Simple, Transparent Pricing</h2>
           <p className="section-subtitle">
-            Start free with 3 credits. Upgrade to Pro when you&apos;re ready to publish at scale.
-            Each credit = one complete video (research → script → assets → render).
+            <strong>{CREDITS_PER_VIDEO} credits = 1 video.</strong> Free plan includes {FREE_PLAN_VIDEOS} video
+            ({FREE_PLAN_CREDITS} credits). Pro gives {PRO_PLAN_VIDEOS} videos ({PRO_PLAN_CREDITS} credits) for $29/mo.
           </p>
         </div>
 
@@ -123,8 +135,13 @@ export function PricingSection() {
                   <span className="font-display text-5xl font-extrabold">{plan.price}</span>
                   <span className="text-white/40">{plan.period}</span>
                 </div>
-                <div className="mb-6 flex items-center gap-4 text-xs text-white/40">
-                  <span className="flex items-center gap-1"><Zap className="h-3 w-3 text-violet-400" />{plan.credits} credits</span>
+                <div className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-white/40">
+                  <span className="flex items-center gap-1">
+                    <Zap className="h-3 w-3 text-violet-400" />
+                    {plan.credits} credits
+                  </span>
+                  <span>·</span>
+                  <span>{plan.videos} video{plan.videos > 1 ? "s" : ""}</span>
                   <span>·</span>
                   <span>{plan.perVideo} per video</span>
                 </div>
@@ -167,7 +184,7 @@ export function PricingSection() {
         </div>
 
         <p className="mt-8 text-center text-xs text-white/30">
-          All plans include SSL encryption, Supabase auth, and automatic credit restore on failed jobs.
+          Each render costs {CREDITS_PER_VIDEO} credits. Failed jobs restore credits automatically.
           <a href="/refund-policy" className="ml-1 text-violet-400 hover:underline">7-day money-back guarantee</a> on Pro.
         </p>
       </div>

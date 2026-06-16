@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 
+import { CREDITS_PER_VIDEO, FREE_PLAN_CREDITS } from "@/lib/credits";
+
 const perks = [
-  "3 free video credits — no card required",
+  `1 free video (${FREE_PLAN_CREDITS} credits) — no card required`,
+  `${CREDITS_PER_VIDEO} credits per complete render`,
   "Full pipeline: research → script → render",
   "Download MP4 with burned-in subtitles",
   "Cancel Pro subscription anytime",

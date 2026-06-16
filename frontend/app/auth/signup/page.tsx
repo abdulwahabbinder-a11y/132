@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Film } from "lucide-react";
+import { CREDITS_PER_VIDEO, FREE_PLAN_CREDITS } from "@/lib/credits";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -44,7 +45,7 @@ export default function SignupPage() {
           <h1 className="mb-4 text-2xl font-bold">Check your email</h1>
           <p className="text-white/60">
             We sent a confirmation link to {email}. Click it to activate your account
-            with 3 free video credits.
+            with 1 free video ({FREE_PLAN_CREDITS} credits).
           </p>
         </div>
       </div>
@@ -63,7 +64,7 @@ export default function SignupPage() {
 
         <div className="card">
           <h1 className="mb-2 text-2xl font-bold">Create Account</h1>
-          <p className="mb-6 text-sm text-white/50">Start with 3 free video credits</p>
+          <p className="mb-6 text-sm text-white/50">Start with 1 free video — {FREE_PLAN_CREDITS} credits ({CREDITS_PER_VIDEO} per render)</p>
 
           <form onSubmit={handleSignup} className="space-y-4">
             <div>

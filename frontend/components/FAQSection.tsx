@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ChevronDown, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CREDITS_PER_VIDEO, FREE_PLAN_CREDITS, PRO_PLAN_VIDEOS } from "@/lib/credits";
 
 const faqs = [
   {
@@ -23,8 +24,12 @@ const faqs = [
     a: "Pro plan includes full commercial usage rights for YouTube monetization, client deliverables, and paid courses. Free plan outputs are limited to personal, non-commercial use.",
   },
   {
+    q: "How do credits work?",
+    a: `Each video render costs ${CREDITS_PER_VIDEO} credits. Free accounts get ${FREE_PLAN_CREDITS} credits (1 video). Pro ($29/mo) includes 30 credits — enough for ${PRO_PLAN_VIDEOS} video renders per month.`,
+  },
+  {
     q: "What happens if generation fails?",
-    a: "Credits are automatically restored within 24 hours for platform-side failures. You can track job status, error logs, and re-queue from your Projects page.",
+    a: `All ${CREDITS_PER_VIDEO} credits are automatically restored within 24 hours for platform-side failures. You can track job status from your Projects page.`,
   },
 ];
 

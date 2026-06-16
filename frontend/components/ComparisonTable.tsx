@@ -1,4 +1,5 @@
 import { Check, X, Minus } from "lucide-react";
+import { proPricePerVideo } from "@/lib/credits";
 
 const rows = [
   { feature: "Live web research (10+ sources)", docuforge: true, manual: false, others: "partial" },
@@ -10,7 +11,7 @@ const rows = [
   { feature: "Burned-in subtitles", docuforge: true, manual: true, others: "partial" },
   { feature: "9:16 + 21:9 output", docuforge: true, manual: true, others: "partial" },
   { feature: "Time to produce (avg)", docuforge: "~45 min", manual: "3–5 days", others: "2–4 hrs" },
-  { feature: "Cost per video", docuforge: "~$0.97", manual: "$500+", others: "$5–15" },
+  { feature: "Cost per video (Pro)", docuforge: proPricePerVideo(), manual: "$500+", others: "$5–15" },
 ];
 
 function Cell({ value }: { value: boolean | string }) {

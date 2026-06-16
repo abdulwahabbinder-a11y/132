@@ -50,9 +50,10 @@ class Settings(BaseSettings):
     asset_storage_path: str = "/tmp/docuforge/assets"
     output_storage_path: str = "/tmp/docuforge/output"
 
-    # Credits
+    # Credits — 5 credits = 1 rendered video
+    credits_per_video: int = 5
     pro_plan_monthly_credits: int = 30
-    free_plan_credits: int = 3
+    free_plan_credits: int = 5
 
     @property
     def cors_origin_list(self) -> list[str]:

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Loader2, Wand2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { api } from "@/lib/api";
+import { CREDITS_PER_VIDEO, videosFromCredits } from "@/lib/credits";
 
 interface VideoGeneratorProps {
   creditsLeft: number;
@@ -21,8 +22,8 @@ export function VideoGenerator({ creditsLeft, onGenerated }: VideoGeneratorProps
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (creditsLeft <= 0) {
-      setError("No video credits remaining. Please upgrade to Pro.");
+    if (creditsLeft < CREDITS_PER_VIDEO) {
+      setError(`Not enough credits. Each video requires ${CREDITS_PER_VIDEO} credits. Please upgrade to Pro.`);
       return;
     }
 
@@ -131,7 +132,7 @@ export function VideoGenerator({ creditsLeft, onGenerated }: VideoGeneratorProps
 
         <button
           type="submit"
-          disabled={loading || creditsLeft <= 0}
+          disabled={loading || creditsLeft < CREDITS_PER_VIDEO}
           className="btn-primary w-full gap-2 disabled:opacity-50"
         >
           {loading ? (
@@ -142,7 +143,7 @@ export function VideoGenerator({ creditsLeft, onGenerated }: VideoGeneratorProps
           ) : (
             <>
               <Wand2 className="h-5 w-5" />
-              Generate Documentary ({creditsLeft} credits left)
+              Generate Documentary ({videosFromCredits(creditsLeft)} video{videosFromCredits(creditsLeft) !== 1 ? "s" : ""} · {creditsLeft} credits)
             </>
           )}
         </button>

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { videosFromCredits } from "@/lib/credits";
 import {
   Clapperboard,
   CreditCard,
@@ -84,6 +85,9 @@ export function VidrushShell({ children, credits }: VidrushShellProps) {
           <div className="mx-3 mb-4 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2.5">
             <p className="text-[11px] font-medium uppercase tracking-wider text-white/40">Credits</p>
             <p className="text-lg font-bold text-violet-400">{credits}</p>
+            <p className="text-[10px] text-white/35">
+              {videosFromCredits(credits)} video{videosFromCredits(credits) !== 1 ? "s" : ""} left
+            </p>
           </div>
         )}
       </aside>

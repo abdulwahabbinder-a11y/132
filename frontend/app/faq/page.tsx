@@ -17,7 +17,7 @@ const faqs = [
   },
   {
     q: "How many free credits do I get?",
-    a: "New accounts receive 3 free video credits. Each generation (short or documentary) uses 1 credit. Upgrade to Pro for 30 credits/month at $29.",
+    a: "New accounts receive 5 credits — enough for 1 complete video render. Each video costs 5 credits. Upgrade to Pro for 30 credits/month (6 videos) at $29.",
   },
   {
     q: "Can I use generated videos commercially?",
@@ -33,7 +33,7 @@ const faqs = [
   },
   {
     q: "What if my video generation fails?",
-    a: "Failed jobs due to platform errors automatically restore your credit within 24 hours. Check your Projects page for status.",
+    a: "Failed jobs due to platform errors automatically restore all 5 credits within 24 hours. Check your Projects page for status.",
   },
   {
     q: "How do I cancel my subscription?",
@@ -41,7 +41,7 @@ const faqs = [
   },
   {
     q: "Do you offer refunds?",
-    a: "Yes — new Pro subscribers get a 7-day money-back guarantee if fewer than 3 credits were used. See our Refund Policy.",
+    a: "Yes — new Pro subscribers get a 7-day money-back guarantee if fewer than 1 video (5 credits) was rendered. See our Refund Policy.",
   },
 ];
 

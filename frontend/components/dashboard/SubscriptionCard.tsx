@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Crown, Zap } from "lucide-react";
+import { CREDITS_PER_VIDEO, videosFromCredits } from "@/lib/credits";
 
 interface SubscriptionCardProps {
   subscription: {
@@ -29,7 +30,10 @@ export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
 
       <div className="mb-6">
         <p className="text-4xl font-bold">{subscription.video_credits_left}</p>
-        <p className="text-sm text-white/50">video credits remaining</p>
+        <p className="text-sm text-white/50">
+          credits · {videosFromCredits(subscription.video_credits_left)} video{videosFromCredits(subscription.video_credits_left) !== 1 ? "s" : ""} left
+        </p>
+        <p className="mt-1 text-xs text-white/35">{CREDITS_PER_VIDEO} credits per render</p>
       </div>
 
       {subscription.billing_cycle_end && (

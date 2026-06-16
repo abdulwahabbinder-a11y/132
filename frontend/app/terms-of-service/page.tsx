@@ -17,8 +17,8 @@ export default function TermsPage() {
         <h2 className="text-xl font-semibold text-white">3. Account &amp; Credits</h2>
         <ul className="list-disc space-y-2 pl-5">
           <li>You must provide accurate registration information.</li>
-          <li>Free accounts receive 3 video credits. Pro accounts receive 30 credits per billing cycle.</li>
-          <li>One credit is consumed per video generation job.</li>
+          <li>Free accounts receive 5 credits (1 video). Pro accounts receive 30 credits (6 videos) per billing cycle.</li>
+          <li>Each video render costs 5 credits (research → script → assets → render).</li>
           <li>Credits do not roll over unless stated in your plan.</li>
         </ul>
       </section>

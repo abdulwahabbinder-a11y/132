@@ -12,7 +12,7 @@ export default function RefundPolicyPage() {
       </section>
       <section>
         <h2 className="text-xl font-semibold text-white">2. 7-Day Money-Back Guarantee</h2>
-        <p>New Pro subscribers may request a full refund within <strong>7 days</strong> of their first payment if they have used fewer than 3 video credits. Contact {SITE.email} with your account email.</p>
+        <p>New Pro subscribers may request a full refund within <strong>7 days</strong> of their first payment if they have rendered fewer than 1 video (5 credits used). Contact {SITE.email} with your account email.</p>
       </section>
       <section>
         <h2 className="text-xl font-semibold text-white">3. Non-Refundable Items</h2>
@@ -29,7 +29,7 @@ export default function RefundPolicyPage() {
       </section>
       <section>
         <h2 className="text-xl font-semibold text-white">5. Failed Generations</h2>
-        <p>If a video generation fails due to a platform error (not user misconfiguration), the consumed credit will be automatically restored to your account within 24 hours.</p>
+        <p>If a video generation fails due to a platform error (not user misconfiguration), the 5 credits consumed will be automatically restored to your account within 24 hours.</p>
       </section>
       <section>
         <h2 className="text-xl font-semibold text-white">6. How to Request a Refund</h2>

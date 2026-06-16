@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS public.subscriptions (
     plan_type TEXT NOT NULL DEFAULT 'free' CHECK (plan_type IN ('free', 'pro')),
     stripe_customer_id TEXT,
     stripe_subscription_id TEXT,
-    video_credits_left INTEGER NOT NULL DEFAULT 3,
+    video_credits_left INTEGER NOT NULL DEFAULT 5,
     billing_cycle_end TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
@@ -52,7 +52,7 @@ BEGIN
         COALESCE(NEW.raw_user_meta_data->>'full_name', '')
     );
     INSERT INTO public.subscriptions (user_id, plan_type, video_credits_left)
-    VALUES (NEW.id, 'free', 3);
+    VALUES (NEW.id, 'free', 5);
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

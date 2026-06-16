@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { SITE } from "@/lib/site";
+import { CREDITS_PER_VIDEO, FREE_PLAN_CREDITS } from "@/lib/credits";
 import {
   Play, Sparkles, Globe, Video, ArrowRight, CheckCircle2,
   Clock, Shield, Zap,
@@ -18,7 +19,7 @@ const stats = [
 const trust = [
   { icon: Shield, text: "SOC2-ready infrastructure" },
   { icon: Zap, text: "Claude + Llama dual AI" },
-  { icon: Clock, text: "3 free credits on signup" },
+  { icon: Clock, text: `1 free video (${FREE_PLAN_CREDITS} credits)` },
 ];
 
 export function Hero() {
@@ -79,7 +80,7 @@ export function Hero() {
             <div className="flex flex-col gap-3 sm:flex-row">
               <Link href="/create" className="btn-primary px-8 py-3.5 text-base">
                 <Play className="h-4 w-4" />
-                Start Free — 3 Credits
+                Start Free — 1 Video
               </Link>
               <Link href="#pipeline" className="btn-secondary px-8 py-3.5 text-base">
                 Explore Pipeline

@@ -16,7 +16,7 @@ class Subscription(BaseModel):
     plan_type: SubscriptionPlan = SubscriptionPlan.FREE
     stripe_customer_id: str | None = None
     stripe_subscription_id: str | None = None
-    video_credits_left: int = 3
+    video_credits_left: int = 5
     billing_cycle_end: datetime | None = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)

@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.dependencies import get_current_user_id, get_user_subscription
 from app.schemas.story import GenerateStoryRequest, GenerateStoryResponse
 from app.services.llm.router import StoryGenerationRouter
+from app.services.credits import can_render_video, deduct_credits
 from app.workers.background import enqueue_video_pipeline
 
 logger = logging.getLogger(__name__)
@@ -22,10 +23,10 @@ async def generate_story(
     subscription = await get_user_subscription(user_id)
     credits_left = subscription.get("video_credits_left", 0)
 
-    if credits_left <= 0:
+    if not can_render_video(credits_left):
         raise HTTPException(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
-            detail="No video credits remaining. Please upgrade your plan.",
+            detail="Not enough credits for one video (5 credits required). Please upgrade your plan.",
         )
 
     try:
@@ -59,7 +60,7 @@ async def generate_story(
         }
     ).execute()
 
-    new_credits = credits_left - 1
+    new_credits = deduct_credits(credits_left)
     supabase.table("subscriptions").update(
         {"video_credits_left": new_credits}
     ).eq("user_id", str(user_id)).execute()
