@@ -138,6 +138,7 @@ Resources:
       SecretString: !Sub |
         {
           "SUPABASE_URL": "${SupabaseUrl}",
+          "SUPABASE_ANON_KEY": "${SupabaseAnonKey}",
           "SUPABASE_SERVICE_KEY": "${SupabaseServiceKey}",
           "SUPABASE_JWT_SECRET": "${SupabaseJwtSecret}",
           "STRIPE_SECRET_KEY": "${StripeSecretKey}",
@@ -491,14 +492,19 @@ Outputs:
     Description: Push Worker Lambda image here
     Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${WorkerEcrRepository}
 
-  PostDeployCommands:
-    Description: Run these commands after stack CREATE to build and push Lambda images
+  PostDeployImagePush:
+    Description: Run after stack CREATE (infrastructure phase) to build and push Lambda images
     Value: !Sub |
       aws ecr get-login-password --region ${AWS::Region} | docker login --username AWS --password-stdin ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
       docker build -f backend/Dockerfile.lambda-api -t ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ApiEcrRepository}:latest .
       docker push ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ApiEcrRepository}:latest
       docker build -f backend/Dockerfile.lambda-worker -t ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${WorkerEcrRepository}:latest .
       docker push ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${WorkerEcrRepository}:latest
+
+  PostDeployLambdaUpdate:
+    Condition: DeployLambdas
+    Description: After DeploymentPhase=full, refresh Lambda functions with latest images
+    Value: !Sub |
       aws lambda update-function-code --function-name ${ApiFunction} --image-uri ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ApiEcrRepository}:latest
       aws lambda update-function-code --function-name ${WorkerFunction} --image-uri ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${WorkerEcrRepository}:latest
 

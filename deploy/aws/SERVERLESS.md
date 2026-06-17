@@ -38,6 +38,8 @@ Users → CloudFront → S3 (frontend static)
 
 ### Step 2: Push Lambda Docker images
 
+After stack CREATE, copy the **PostDeployImagePush** output commands, or run:
+
 ```bash
 chmod +x deploy/aws/build-lambda-images.sh
 bash deploy/aws/build-lambda-images.sh docuforge-serverless us-east-1

@@ -16,8 +16,8 @@ DOMAIN=$(aws cloudformation describe-stacks --stack-name "$STACK" --region "$REG
 
 SUPABASE_URL=$(aws cloudformation describe-stacks --stack-name "$STACK" --region "$REGION" \
   --query "Stacks[0].Parameters[?ParameterKey=='SupabaseUrl'].ParameterValue" --output text 2>/dev/null || echo "")
-SUPABASE_ANON=$(aws secretsmanager get-secret-value --secret-id "docuforge/${STACK}/app" --region "$REGION" \
-  --query SecretString --output text 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('SUPABASE_ANON_KEY',''))" 2>/dev/null || echo "")
+SUPABASE_ANON=$(aws cloudformation describe-stacks --stack-name "$STACK" --region "$REGION" \
+  --query "Stacks[0].Parameters[?ParameterKey=='SupabaseAnonKey'].ParameterValue" --output text 2>/dev/null || echo "")
 
 API_URL="${CF_DOMAIN}/api"
 
