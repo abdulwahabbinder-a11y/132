@@ -259,7 +259,7 @@ Resources:
     Properties:
       PackageType: Image
       ImageUri: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${WorkerEcrRepository}:latest
-      MemorySize: 10240
+      MemorySize: 3008
       Timeout: 900
       ReservedConcurrentExecutions: 10
       Environment:

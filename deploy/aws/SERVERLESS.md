@@ -122,6 +122,6 @@ GET https://<api-id>.execute-api.<region>.amazonaws.com/api/health
 
 ## Notes
 
-- Worker Lambda: 10 GB RAM, 15 min timeout (max) — suitable for short/medium videos
+- Worker Lambda: 3008 MB RAM (Lambda max), 15 min timeout — suitable for short/medium videos
 - `/tmp` is ephemeral — plan S3 for persistent video storage in production
 - Celery/Redis replaced by SQS in serverless mode (`JOB_QUEUE_MODE=sqs`)
