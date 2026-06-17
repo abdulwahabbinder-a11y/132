@@ -1,0 +1,518 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  DocuForge Serverless — zero idle cost video SaaS.
+  FastAPI on Lambda + API Gateway. FFmpeg rendering on SQS-triggered Lambda (pay only when videos render).
+  Upload this file to the AWS CloudFormation console, fill the 1-page form, then run the post-deploy image build command from Outputs.
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Supabase — Database & Authentication"
+        Parameters:
+          - SupabaseUrl
+          - SupabaseAnonKey
+          - SupabaseServiceKey
+          - SupabaseJwtSecret
+      - Label:
+          default: "Payments & AI APIs"
+        Parameters:
+          - StripeSecretKey
+          - StripeWebhookSecret
+          - ElevenLabsApiKey
+          - ClaudeApiKey
+          - NvidiaNimApiKey
+      - Label:
+          default: "Application Settings"
+        Parameters:
+          - DomainName
+          - StripeProPriceId
+      - Label:
+          default: "Deployment"
+        Parameters:
+          - DeploymentPhase
+    ParameterLabels:
+      SupabaseUrl:
+        default: "Supabase Project URL"
+      SupabaseAnonKey:
+        default: "Supabase Anon Key (public)"
+      SupabaseServiceKey:
+        default: "Supabase Service Role Key"
+      SupabaseJwtSecret:
+        default: "Supabase JWT Secret"
+      StripeSecretKey:
+        default: "Stripe Secret Key"
+      StripeWebhookSecret:
+        default: "Stripe Webhook Secret"
+      ElevenLabsApiKey:
+        default: "ElevenLabs API Key"
+      DomainName:
+        default: "Your domain (e.g. docuforge.pro)"
+
+Parameters:
+  SupabaseUrl:
+    Type: String
+    Description: "https://your-project.supabase.co"
+    AllowedPattern: "^https://.*"
+    ConstraintDescription: Must be a valid HTTPS Supabase URL
+
+  SupabaseAnonKey:
+    Type: String
+    NoEcho: true
+    Description: Supabase anon/public key (used by the Next.js frontend)
+
+  SupabaseServiceKey:
+    Type: String
+    NoEcho: true
+    Description: Supabase service_role key (backend only)
+
+  SupabaseJwtSecret:
+    Type: String
+    NoEcho: true
+    Description: Supabase JWT secret for token verification
+
+  StripeSecretKey:
+    Type: String
+    NoEcho: true
+    Description: Stripe secret key (sk_live_... or sk_test_...)
+
+  StripeWebhookSecret:
+    Type: String
+    NoEcho: true
+    Default: ""
+    Description: Stripe webhook signing secret (whsec_...)
+
+  ElevenLabsApiKey:
+    Type: String
+    NoEcho: true
+    Default: ""
+    Description: ElevenLabs API key for voice synthesis
+
+  ClaudeApiKey:
+    Type: String
+    NoEcho: true
+    Default: ""
+    Description: Anthropic Claude API key (optional)
+
+  NvidiaNimApiKey:
+    Type: String
+    NoEcho: true
+    Default: ""
+    Description: NVIDIA NIM API key (optional, for image/video AI)
+
+  StripeProPriceId:
+    Type: String
+    Default: ""
+    Description: Stripe Price ID for Pro plan (price_...)
+
+  DomainName:
+    Type: String
+    Default: docuforge.pro
+    Description: Production domain for CORS and frontend build
+
+  DeploymentPhase:
+    Type: String
+    Default: infrastructure
+    AllowedValues:
+      - infrastructure
+      - full
+    Description: Start with infrastructure, push images, then set to full
+
+Conditions:
+  DeployLambdas: !Equals [!Ref DeploymentPhase, full]
+
+Globals:
+  Function:
+    Tracing: Active
+    Tags:
+      Application: DocuForge
+
+Resources:
+  # ── Secrets (persist parameters in Secrets Manager) ─────────────────────
+  AppSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub docuforge/${AWS::StackName}/app
+      Description: DocuForge application secrets
+      SecretString: !Sub |
+        {
+          "SUPABASE_URL": "${SupabaseUrl}",
+          "SUPABASE_SERVICE_KEY": "${SupabaseServiceKey}",
+          "SUPABASE_JWT_SECRET": "${SupabaseJwtSecret}",
+          "STRIPE_SECRET_KEY": "${StripeSecretKey}",
+          "STRIPE_WEBHOOK_SECRET": "${StripeWebhookSecret}",
+          "ELEVENLABS_API_KEY": "${ElevenLabsApiKey}",
+          "CLAUDE_API_KEY": "${ClaudeApiKey}",
+          "NVIDIA_NIM_API_KEY": "${NvidiaNimApiKey}",
+          "STRIPE_PRO_PRICE_ID": "${StripeProPriceId}"
+        }
+
+  # ── Video job queue (replaces Redis/Celery — zero idle cost) ─────────────
+  VideoDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 1209600
+      SqsManagedSseEnabled: true
+
+  VideoQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 960
+      SqsManagedSseEnabled: true
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt VideoDLQ.Arn
+        maxReceiveCount: 2
+
+  # ── ECR repositories for Lambda container images ─────────────────────────
+  ApiEcrRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub docuforge/${AWS::StackName}/api
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      EmptyOnDelete: true
+
+  WorkerEcrRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub docuforge/${AWS::StackName}/worker
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      EmptyOnDelete: true
+
+  # ── API Gateway HTTP API ─────────────────────────────────────────────────
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: $default
+      CorsConfiguration:
+        AllowCredentials: true
+        AllowHeaders:
+          - "*"
+        AllowMethods:
+          - GET
+          - POST
+          - PUT
+          - PATCH
+          - DELETE
+          - OPTIONS
+        AllowOrigins:
+          - !Sub https://${DomainName}
+          - !Sub https://www.${DomainName}
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Condition: DeployLambdas
+    Properties:
+      PackageType: Image
+      ImageUri: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ApiEcrRepository}:latest
+      MemorySize: 2048
+      Timeout: 29
+      Environment:
+        Variables:
+          JOB_QUEUE_MODE: sqs
+          VIDEO_QUEUE_URL: !Ref VideoQueue
+          SUPABASE_URL: !Ref SupabaseUrl
+          SUPABASE_SERVICE_KEY: !Ref SupabaseServiceKey
+          SUPABASE_JWT_SECRET: !Ref SupabaseJwtSecret
+          STRIPE_SECRET_KEY: !Ref StripeSecretKey
+          STRIPE_WEBHOOK_SECRET: !Ref StripeWebhookSecret
+          STRIPE_PRO_PRICE_ID: !Ref StripeProPriceId
+          ELEVENLABS_API_KEY: !Ref ElevenLabsApiKey
+          CLAUDE_API_KEY: !Ref ClaudeApiKey
+          NVIDIA_NIM_API_KEY: !Ref NvidiaNimApiKey
+          FRONTEND_URL: !Sub https://${DomainName}
+          CORS_ORIGINS: !Sub https://${DomainName},https://www.${DomainName}
+          ASSET_STORAGE_PATH: /tmp/docuforge/assets
+          OUTPUT_STORAGE_PATH: /tmp/docuforge/output
+      Policies:
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt VideoQueue.QueueName
+        - Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Ref AppSecret
+      Events:
+        ProxyApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /{proxy+}
+            Method: ANY
+        RootApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /
+            Method: ANY
+    Metadata:
+      DockerTag: latest
+      DockerContext: ../../
+      Dockerfile: backend/Dockerfile.lambda-api
+
+  WorkerFunction:
+    Type: AWS::Serverless::Function
+    Condition: DeployLambdas
+    Properties:
+      PackageType: Image
+      ImageUri: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${WorkerEcrRepository}:latest
+      MemorySize: 10240
+      Timeout: 900
+      ReservedConcurrentExecutions: 10
+      Environment:
+        Variables:
+          JOB_QUEUE_MODE: sqs
+          VIDEO_QUEUE_URL: !Ref VideoQueue
+          SUPABASE_URL: !Ref SupabaseUrl
+          SUPABASE_SERVICE_KEY: !Ref SupabaseServiceKey
+          SUPABASE_JWT_SECRET: !Ref SupabaseJwtSecret
+          ELEVENLABS_API_KEY: !Ref ElevenLabsApiKey
+          CLAUDE_API_KEY: !Ref ClaudeApiKey
+          NVIDIA_NIM_API_KEY: !Ref NvidiaNimApiKey
+          REMOTION_PROJECT_DIR: /var/task/remotion
+          ASSET_STORAGE_PATH: /tmp/docuforge/assets
+          OUTPUT_STORAGE_PATH: /tmp/docuforge/output
+      Policies:
+        - SQSPollerPolicy:
+            QueueName: !GetAtt VideoQueue.QueueName
+      Events:
+        VideoQueueEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt VideoQueue.Arn
+            BatchSize: 1
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
+    Metadata:
+      DockerTag: latest
+      DockerContext: ../../
+      Dockerfile: backend/Dockerfile.lambda-worker
+
+  # ── Frontend static hosting (S3 + CloudFront) — pennies/month ───────────
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowCloudFrontOAC
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub ${FrontendBucket.Arn}/*
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub arn:aws:cloudfront::${AWS::AccountId}:distribution/${FrontendDistribution}
+
+  FrontendOAC:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub docuforge-${AWS::StackName}-oac
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  FrontendDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        DefaultRootObject: index.html
+        HttpVersion: http2and3
+        Origins:
+          - Id: S3Frontend
+            DomainName: !GetAtt FrontendBucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt FrontendOAC.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+          - Id: ApiGateway
+            DomainName: !Sub ${HttpApi}.execute-api.${AWS::Region}.amazonaws.com
+            CustomOriginConfig:
+              OriginProtocolPolicy: https-only
+              OriginSSLProtocols:
+                - TLSv1.2
+        DefaultCacheBehavior:
+          TargetOriginId: S3Frontend
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          CachedMethods: [GET, HEAD]
+          Compress: true
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+        CacheBehaviors:
+          - PathPattern: /api/*
+            TargetOriginId: ApiGateway
+            ViewerProtocolPolicy: https-only
+            AllowedMethods: [GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE]
+            CachedMethods: [GET, HEAD]
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac
+        CustomErrorResponses:
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 0
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 0
+
+  FrontendPlaceholder:
+    Type: AWS::CloudFormation::CustomResource
+    DependsOn:
+      - FrontendBucketPolicy
+    Properties:
+      ServiceToken: !GetAtt FrontendInitFunction.Arn
+      BucketName: !Ref FrontendBucket
+      ApiUrl: !Sub https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com
+      DomainName: !Ref DomainName
+      SupabaseUrl: !Ref SupabaseUrl
+      SupabaseAnonKey: !Ref SupabaseAnonKey
+
+  FrontendInitRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: S3Put
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource: !Sub ${FrontendBucket.Arn}/*
+
+  FrontendInitFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: python3.11
+      Handler: index.handler
+      Role: !GetAtt FrontendInitRole.Arn
+      Timeout: 60
+      Code:
+        ZipFile: |
+          import json
+          import urllib.request
+          import boto3
+
+          s3 = boto3.client("s3")
+
+          def send(event, context, status, reason, data):
+              body = json.dumps({
+                  "Status": status,
+                  "Reason": reason,
+                  "PhysicalResourceId": event.get("PhysicalResourceId", context.log_stream_name),
+                  "StackId": event["StackId"],
+                  "RequestId": event["RequestId"],
+                  "LogicalResourceId": event["LogicalResourceId"],
+                  "Data": data,
+              }).encode()
+              req = urllib.request.Request(event["ResponseURL"], data=body, method="PUT")
+              req.add_header("Content-Type", "")
+              req.add_header("Content-Length", str(len(body)))
+              urllib.request.urlopen(req)
+
+          def handler(event, context):
+              try:
+                  props = event["ResourceProperties"]
+                  bucket = props["BucketName"]
+                  api_url = props["ApiUrl"]
+                  domain = props["DomainName"]
+                  html = f"""<!DOCTYPE html>
+          <html><head><meta charset='utf-8'><title>DocuForge</title>
+          <style>body{{font-family:system-ui;background:#09090b;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}}
+          .card{{max-width:520px;padding:2rem;border:1px solid #333;border-radius:16px;text-align:center}}
+          a{{color:#a78bfa}}</style></head><body><div class='card'>
+          <h1>DocuForge is deploying</h1>
+          <p>API is live. Upload the Next.js frontend build to S3 bucket <code>{bucket}</code>.</p>
+          <p>API health: <a href="{api_url}/api/health" target="_blank">{api_url}/api/health</a></p>
+          <p>Then set <code>{domain}</code> CNAME to CloudFront.</p>
+          </div></body></html>"""
+                  if event["RequestType"] in ("Create", "Update"):
+                      s3.put_object(Bucket=bucket, Key="index.html", Body=html.encode(), ContentType="text/html")
+                  send(event, context, "SUCCESS", "ok", {"Bucket": bucket})
+              except Exception as exc:
+                  send(event, context, "FAILED", str(exc), {})
+
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway URL (use for Stripe webhooks and testing)
+    Value: !Sub https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com
+    Export:
+      Name: !Sub ${AWS::StackName}-ApiEndpoint
+
+  ApiHealthCheck:
+    Description: Health check URL
+    Value: !Sub https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/api/health
+
+  FrontendUrl:
+    Description: CloudFront URL for the frontend (point your domain CNAME here)
+    Value: !Sub https://${FrontendDistribution.DomainName}
+
+  FrontendBucketName:
+    Description: S3 bucket — upload Next.js static build here
+    Value: !Ref FrontendBucket
+
+  VideoQueueUrl:
+    Description: SQS queue for video rendering jobs
+    Value: !Ref VideoQueue
+
+  ApiEcrRepositoryUri:
+    Description: Push API Lambda image here
+    Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ApiEcrRepository}
+
+  WorkerEcrRepositoryUri:
+    Description: Push Worker Lambda image here
+    Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${WorkerEcrRepository}
+
+  PostDeployCommands:
+    Description: Run these commands after stack CREATE to build and push Lambda images
+    Value: !Sub |
+      aws ecr get-login-password --region ${AWS::Region} | docker login --username AWS --password-stdin ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
+      docker build -f backend/Dockerfile.lambda-api -t ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ApiEcrRepository}:latest .
+      docker push ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ApiEcrRepository}:latest
+      docker build -f backend/Dockerfile.lambda-worker -t ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${WorkerEcrRepository}:latest .
+      docker push ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${WorkerEcrRepository}:latest
+      aws lambda update-function-code --function-name ${ApiFunction} --image-uri ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ApiEcrRepository}:latest
+      aws lambda update-function-code --function-name ${WorkerFunction} --image-uri ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${WorkerEcrRepository}:latest
+
+  FrontendBuildHint:
+    Description: Build and upload Next.js frontend
+    Value: !Sub |
+      cd frontend && npm ci && npm run build
+      NEXT_PUBLIC_API_URL=https://${FrontendDistribution.DomainName}/api NEXT_PUBLIC_SITE_URL=https://${DomainName} npm run build
+      aws s3 sync out/ s3://${FrontendBucket}/ --delete
+
+  StripeWebhookUrl:
+    Description: Set this URL in Stripe Dashboard → Webhooks
+    Value: !Sub https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/api/webhooks/stripe
+
+  InstallNotes:
+    Description: Cost model
+    Value: "Zero idle cost — API Lambda and Worker Lambda scale to zero. Worker runs only when videos are queued. CloudFront + S3 ~$1-5/mo."

@@ -119,7 +119,7 @@ bash scripts/docker-build.sh
 
 | Platform | Deploy guide |
 |----------|--------------|
-| **AWS (recommended)** | [deploy/aws/DEPLOY.md](deploy/aws/DEPLOY.md) |
+| **AWS Serverless (zero idle)** | [deploy/aws/SERVERLESS.md](deploy/aws/SERVERLESS.md) — `template.yaml` |
 | Google Cloud | [deploy/gcp/DEPLOY.md](deploy/gcp/DEPLOY.md) |
 | Docker reference | [deploy/DOCKER.md](deploy/DOCKER.md) |
 

@@ -14,7 +14,7 @@ from app.schemas.short import (
 )
 from app.services.credits import can_render_video, credits_per_video, deduct_credits
 from app.services.downloads import resolve_local_video, stream_video_file
-from app.workers.background import enqueue_short_pipeline
+from app.services.job_queue import enqueue_short
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/shorts", tags=["shorts"])
@@ -59,7 +59,7 @@ async def generate_short(
         {"video_credits_left": new_credits}
     ).eq("user_id", str(user_id)).execute()
 
-    enqueue_short_pipeline.delay(
+    enqueue_short(
         str(job_id),
         request.topic,
         request.target_duration_seconds,

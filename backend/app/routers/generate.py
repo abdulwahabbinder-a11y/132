@@ -7,7 +7,7 @@ from app.dependencies import get_current_user_id, get_user_subscription
 from app.schemas.story import GenerateStoryRequest, GenerateStoryResponse
 from app.services.llm.router import StoryGenerationRouter
 from app.services.credits import can_render_video, credits_per_video, deduct_credits
-from app.workers.background import enqueue_video_pipeline
+from app.services.job_queue import enqueue_documentary
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/generate-story", tags=["generation"])
@@ -66,7 +66,7 @@ async def generate_story(
         {"video_credits_left": new_credits}
     ).eq("user_id", str(user_id)).execute()
 
-    enqueue_video_pipeline.delay(str(job_id))
+    enqueue_documentary(str(job_id))
 
     return GenerateStoryResponse(
         job_id=job_id,

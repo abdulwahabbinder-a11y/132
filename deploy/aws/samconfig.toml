@@ -1,0 +1,20 @@
+# DocuForge Serverless — SAM deploy config
+# Usage: cd deploy/aws && sam build && sam deploy --guided
+
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "docuforge-serverless"
+resolve_s3 = true
+s3_prefix = "docuforge-sam"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND"
+parameter_overrides = "DeploymentPhase=full DomainName=docuforge.pro"
+image_repositories = []
+
+[default.build.parameters]
+parallel = true
+
+[default.global.parameters]
+region = "us-east-1"
