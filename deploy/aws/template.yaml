@@ -159,11 +159,30 @@ Resources:
   VideoQueue:
     Type: AWS::SQS::Queue
     Properties:
-      VisibilityTimeout: 960
+      VisibilityTimeout: 5400
       SqsManagedSseEnabled: true
       RedrivePolicy:
         deadLetterTargetArn: !GetAtt VideoDLQ.Arn
-        maxReceiveCount: 2
+        maxReceiveCount: 3
+
+  # ── Rendered video storage (worker uploads, API serves presigned URLs) ───
+  VideosBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpireRenderedVideos
+            Status: Enabled
+            ExpirationInDays: 30
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
 
   # ── ECR repositories for Lambda container images ─────────────────────────
   ApiEcrRepository:
@@ -224,9 +243,10 @@ Resources:
           CLAUDE_API_KEY: !Ref ClaudeApiKey
           NVIDIA_NIM_API_KEY: !Ref NvidiaNimApiKey
           FRONTEND_URL: !Sub https://${DomainName}
-          CORS_ORIGINS: !Sub https://${DomainName},https://www.${DomainName}
+          CORS_ORIGINS: !Sub https://${DomainName},https://www.${DomainName},https://${FrontendDistribution.DomainName}
           ASSET_STORAGE_PATH: /tmp/docuforge/assets
           OUTPUT_STORAGE_PATH: /tmp/docuforge/output
+          OUTPUT_BUCKET: !Ref VideosBucket
       Policies:
         - SQSSendMessagePolicy:
             QueueName: !GetAtt VideoQueue.QueueName
@@ -235,6 +255,10 @@ Resources:
               Action:
                 - secretsmanager:GetSecretValue
               Resource: !Ref AppSecret
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+              Resource: !Sub ${VideosBucket.Arn}/*
       Events:
         ProxyApi:
           Type: HttpApi
@@ -261,6 +285,8 @@ Resources:
       ImageUri: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${WorkerEcrRepository}:latest
       MemorySize: 3008
       Timeout: 900
+      EphemeralStorage:
+        Size: 10240
       ReservedConcurrentExecutions: 10
       Environment:
         Variables:
@@ -275,9 +301,15 @@ Resources:
           REMOTION_PROJECT_DIR: /var/task/remotion
           ASSET_STORAGE_PATH: /tmp/docuforge/assets
           OUTPUT_STORAGE_PATH: /tmp/docuforge/output
+          OUTPUT_BUCKET: !Ref VideosBucket
       Policies:
         - SQSPollerPolicy:
             QueueName: !GetAtt VideoQueue.QueueName
+        - Statement:
+            - Effect: Allow
+              Action:
+                - s3:PutObject
+              Resource: !Sub ${VideosBucket.Arn}/*
       Events:
         VideoQueueEvent:
           Type: SQS
@@ -455,7 +487,7 @@ Resources:
           <p>API health: <a href="{api_url}/api/health" target="_blank">{api_url}/api/health</a></p>
           <p>Then set <code>{domain}</code> CNAME to CloudFront.</p>
           </div></body></html>"""
-                  if event["RequestType"] in ("Create", "Update"):
+                  if event["RequestType"] == "Create":
                       s3.put_object(Bucket=bucket, Key="index.html", Body=html.encode(), ContentType="text/html")
                   send(event, context, "SUCCESS", "ok", {"Bucket": bucket})
               except Exception as exc:
@@ -491,6 +523,10 @@ Outputs:
   WorkerEcrRepositoryUri:
     Description: Push Worker Lambda image here
     Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${WorkerEcrRepository}
+
+  VideosBucketName:
+    Description: S3 bucket for rendered MP4 outputs
+    Value: !Ref VideosBucket
 
   PostDeployImagePush:
     Description: Run after stack CREATE (infrastructure phase) to build and push Lambda images

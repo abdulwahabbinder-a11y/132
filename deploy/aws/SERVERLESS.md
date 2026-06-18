@@ -11,6 +11,7 @@ Users → CloudFront → S3 (frontend static)
                                          SQS Queue
                                               ↓
                               Lambda Worker (FFmpeg + Remotion)
+                              → uploads MP4 to S3 VideosBucket
                               ↑ runs ONLY when jobs queued
 ```
 
@@ -19,29 +20,59 @@ Users → CloudFront → S3 (frontend static)
 | Frontend | S3 + CloudFront | ~$1-5/mo |
 | API | Lambda + HTTP API | **$0** |
 | Video render | Lambda (SQS trigger) | **$0** (pay per render) |
+| Video files | S3 (30-day lifecycle) | pennies |
 | Queue | SQS | ~$0 |
 
-## Option A — CloudFormation Console (1-page install form)
+---
+
+## Recommended: one-command deploy
+
+**Important:** Do **not** set `DeploymentPhase=full` until Docker images exist in ECR. Use the script below — it handles the correct order automatically.
+
+```bash
+chmod +x deploy/aws/deploy-serverless.sh deploy/aws/build-lambda-images.sh
+bash deploy/aws/deploy-serverless.sh docuforge-serverless us-east-1
+```
+
+This script:
+1. Deploys **infrastructure** (ECR, SQS, S3, CloudFront — no Lambdas)
+2. Builds & pushes **API + Worker** Docker images to ECR
+3. Updates stack to **full** (creates Lambdas — images now exist)
+
+---
+
+## Option A — CloudFormation Console (manual)
 
 ### Step 1: Upload template
 
 1. Open [AWS CloudFormation Console](https://console.aws.amazon.com/cloudformation)
-2. **Create stack** → **Upload template**
-3. Choose `deploy/aws/template.yaml`
-4. Fill the form:
-   - **Supabase URL / keys**
-   - **Stripe Secret Key**
-   - **ElevenLabs API Key**
-   - **Domain name** (e.g. `docuforge.pro`)
-5. Set **DeploymentPhase** = `infrastructure` (first deploy)
-6. Create stack
+2. **Create stack** → **Upload template** → `deploy/aws/template.yaml`
+3. Fill the form (Supabase, Stripe, ElevenLabs, domain)
+4. Set **DeploymentPhase** = `infrastructure` ← **required first**
+5. Create stack
 
-### Step 2: Push Lambda Docker images
-
-After stack CREATE, copy the **PostDeployImagePush** output commands, or run:
+### Step 2: Push Lambda Docker images (from your Mac, repo root)
 
 ```bash
-chmod +x deploy/aws/build-lambda-images.sh
+cd /path/to/your/repo
+export AWS_REGION=us-east-1
+export AWS_ACCOUNT_ID=114490783207   # your account
+
+aws ecr get-login-password --region $AWS_REGION | \
+  docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+
+docker build -f backend/Dockerfile.lambda-api \
+  -t ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/docuforge/docuforge-serverless/api:latest .
+docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/docuforge/docuforge-serverless/api:latest
+
+docker build -f backend/Dockerfile.lambda-worker \
+  -t ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/docuforge/docuforge-serverless/worker:latest .
+docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/docuforge/docuforge-serverless/worker:latest
+```
+
+Or use the helper script:
+
+```bash
 bash deploy/aws/build-lambda-images.sh docuforge-serverless us-east-1
 ```
 
@@ -52,26 +83,25 @@ Update stack → set **DeploymentPhase** = `full` (keep all other parameters the
 ### Step 4: Upload frontend
 
 ```bash
-bash deploy/aws/upload-frontend.sh docuforge-serverless
+bash deploy/aws/upload-frontend.sh docuforge-serverless us-east-1
 ```
 
 ### Step 5: Domain
 
-Point `docuforge.pro` CNAME to **CloudFront URL** from stack Outputs.
-
+Point `docuforge.pro` CNAME to **FrontendUrl** from stack Outputs.  
 Set Stripe webhook to **StripeWebhookUrl** from Outputs.
 
 ---
 
-## Option B — SAM CLI (builds images automatically)
+## Option B — SAM CLI
 
 ```bash
 cd deploy/aws
 sam build --template template.yaml
-sam deploy --guided
+sam deploy --guided   # use DeploymentPhase=infrastructure first
+bash build-lambda-images.sh docuforge-serverless us-east-1
+# then sam deploy with DeploymentPhase=full
 ```
-
-When prompted, set `DeploymentPhase=full` after first successful image build.
 
 ---
 
@@ -102,6 +132,16 @@ GET https://<api-id>.execute-api.<region>.amazonaws.com/api/health
 
 ---
 
+## Common errors
+
+| Error | Fix |
+|-------|-----|
+| `Source image ... does not exist` | Push Docker images **before** `DeploymentPhase=full` |
+| `MemorySize ... less than or equal to 3008` | Use latest `template.yaml` (worker capped at 3008 MB) |
+| `UPDATE_ROLLBACK_COMPLETE` | Fix cause, then **Stack actions → Continue update rollback** if needed, push images, retry |
+
+---
+
 ## Cost comparison
 
 | Mode | Idle cost | Best for |
@@ -116,12 +156,13 @@ GET https://<api-id>.execute-api.<region>.amazonaws.com/api/health
 | File | Purpose |
 |------|---------|
 | `template.yaml` | Single CloudFormation/SAM template |
+| `deploy-serverless.sh` | **Recommended** — full deploy in correct order |
 | `build-lambda-images.sh` | Build & push API + Worker images |
 | `upload-frontend.sh` | Build & upload Next.js to S3 |
 | `samconfig.toml` | SAM CLI defaults |
 
 ## Notes
 
-- Worker Lambda: 3008 MB RAM (Lambda max), 15 min timeout — suitable for short/medium videos
-- `/tmp` is ephemeral — plan S3 for persistent video storage in production
+- Worker Lambda: 3008 MB RAM, 10 GB `/tmp`, 15 min timeout
+- Rendered videos upload to **VideosBucket** (S3); downloads use presigned URLs
 - Celery/Redis replaced by SQS in serverless mode (`JOB_QUEUE_MODE=sqs`)

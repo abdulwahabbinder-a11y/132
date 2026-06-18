@@ -10,7 +10,7 @@ s3_prefix = "docuforge-sam"
 region = "us-east-1"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND"
-parameter_overrides = "DeploymentPhase=full DomainName=docuforge.pro"
+parameter_overrides = "DeploymentPhase=infrastructure DomainName=docuforge.pro"
 image_repositories = []
 
 [default.build.parameters]

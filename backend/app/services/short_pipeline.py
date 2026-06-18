@@ -16,6 +16,7 @@ from app.services.settings_service import get_platform_setting
 from app.services.video.elevenlabs import ElevenLabsService
 from app.services.video.ffmpeg_processor import FFmpegProcessor
 from app.services.remotion_render import render_viral_short
+from app.services.object_storage import publish_output_file
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +88,11 @@ class ShortVideoPipeline:
 
             self._set_phase("completed", 100)
             self._log("rendering", f"Video rendered successfully: {output_path.name}", 100, "success")
-            self._update_job(status="completed", progress=100, output_url=str(output_path))
+            published_url = publish_output_file(
+                output_path,
+                f"shorts/{self.job_id}/viral-short.mp4",
+            )
+            self._update_job(status="completed", progress=100, output_url=published_url)
 
             return {"output_path": str(output_path), "script": script.model_dump()}
 

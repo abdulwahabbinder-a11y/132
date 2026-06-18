@@ -18,6 +18,7 @@ from app.services.video.elevenlabs import ElevenLabsService
 from app.services.video.ffmpeg_processor import FFmpegProcessor
 from app.services.video.wan21 import Wan21Animator
 from app.services.remotion_render import render_documentary
+from app.services.object_storage import publish_output_file
 
 logger = logging.getLogger(__name__)
 
@@ -120,7 +121,11 @@ class AssetWorker:
             [v for v in scene_videos if v], all_word_timestamps, composition_manifest
         )
 
-        self._update_job_status("completed", 100, output_url=str(output_path))
+        published_url = publish_output_file(
+            Path(output_path),
+            f"documentaries/{self.job_id}/final_documentary.mp4",
+        )
+        self._update_job_status("completed", 100, output_url=published_url)
 
         return {
             "manifest_path": str(manifest_path),

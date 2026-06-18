@@ -49,6 +49,7 @@ class Settings(BaseSettings):
     # Storage
     asset_storage_path: str = "/tmp/docuforge/assets"
     output_storage_path: str = "/tmp/docuforge/output"
+    output_bucket: str = ""
 
     # Credits — 5 credits = 1 rendered video
     credits_per_video: int = 5

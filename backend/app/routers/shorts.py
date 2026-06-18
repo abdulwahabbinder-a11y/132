@@ -13,7 +13,7 @@ from app.schemas.short import (
     ShortJobStatus,
 )
 from app.services.credits import can_render_video, credits_per_video, deduct_credits
-from app.services.downloads import resolve_local_video, stream_video_file
+from app.services.downloads import serve_video_output
 from app.services.job_queue import enqueue_short
 
 logger = logging.getLogger(__name__)
@@ -171,8 +171,4 @@ async def download_short(
     if not result.data or result.data["user_id"] != str(user_id):
         raise HTTPException(status_code=404, detail="Job not found")
 
-    path = resolve_local_video(result.data.get("output_url"))
-    if not path:
-        raise HTTPException(status_code=404, detail="Video file not available yet")
-
-    return stream_video_file(path, "viral-short.mp4")
+    return serve_video_output(result.data.get("output_url"), "viral-short.mp4")
