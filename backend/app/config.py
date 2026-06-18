@@ -77,6 +77,9 @@ class Settings(BaseSettings):
         normalized = origin.rstrip("/")
         if normalized in self.cors_origin_list:
             return True
+        # CloudFront default domain (before custom domain CNAME is wired)
+        if normalized.endswith(".cloudfront.net"):
+            return True
         if self.debug and normalized.endswith(".trycloudflare.com"):
             return True
         return False

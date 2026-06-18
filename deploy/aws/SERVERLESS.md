@@ -138,7 +138,8 @@ GET https://<api-id>.execute-api.<region>.amazonaws.com/api/health
 |-------|-----|
 | `Source image ... does not exist` | Push Docker images **before** `DeploymentPhase=full` |
 | `MemorySize ... less than or equal to 3008` | Use latest `template.yaml` (worker capped at 3008 MB) |
-| `UPDATE_ROLLBACK_COMPLETE` | Fix cause, then **Stack actions → Continue update rollback** if needed, push images, retry |
+| `UPDATE_ROLLBACK_IN_PROGRESS` | Wait until status is `UPDATE_ROLLBACK_COMPLETE`, then update with latest template |
+| `Circular dependency between resources` | Use latest `template.yaml` (removes ApiFunction → CloudFront cycle) |
 
 ---
 

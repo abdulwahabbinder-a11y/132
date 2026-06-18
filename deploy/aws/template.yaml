@@ -243,7 +243,7 @@ Resources:
           CLAUDE_API_KEY: !Ref ClaudeApiKey
           NVIDIA_NIM_API_KEY: !Ref NvidiaNimApiKey
           FRONTEND_URL: !Sub https://${DomainName}
-          CORS_ORIGINS: !Sub https://${DomainName},https://www.${DomainName},https://${FrontendDistribution.DomainName}
+          CORS_ORIGINS: !Sub https://${DomainName},https://www.${DomainName}
           ASSET_STORAGE_PATH: /tmp/docuforge/assets
           OUTPUT_STORAGE_PATH: /tmp/docuforge/output
           OUTPUT_BUCKET: !Ref VideosBucket
@@ -410,7 +410,7 @@ Resources:
   FrontendPlaceholder:
     Type: AWS::CloudFormation::CustomResource
     DependsOn:
-      - FrontendBucketPolicy
+      - FrontendBucket
     Properties:
       ServiceToken: !GetAtt FrontendInitFunction.Arn
       BucketName: !Ref FrontendBucket
