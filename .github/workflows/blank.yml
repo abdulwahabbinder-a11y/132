@@ -31,19 +31,24 @@ jobs:
         docker build -f backend/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-    - name: Build, tag, and push Worker Image
+    - name: Build, tag, and push Worker Image (Try Deploy Folder)
+      continue-on-error: true
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         ECR_REPOSITORY: docuforge/docuforge-serverless/worker
         IMAGE_TAG: latest
       run: |
-        # Agar file deploy folder me lowercase 'dockerfile' naam se hai to usko use karega
-        if [ -f "deploy/dockerfile" ]; then
-          docker build -f deploy/dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        elif [ -f "deploy/Dockerfile" ]; then
-          docker build -f deploy/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        else
-          # Agar file root level par ya kisi aur naam se hai to default check
-          docker build -f Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        fi
+        docker build -f deploy/dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG . || docker build -f deploy/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+    - name: Build, tag, and push Worker Image (Fallback to Scripts Folder)
+      if: ${{ failure() || success() }}
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: docuforge/docuforge-serverless/worker
+        IMAGE_TAG: latest
+      run: |
+        if [ -f "scripts/Dockerfile" ] || [ -f "scripts/dockerfile" ]; then
+          docker build -f scripts/*ectorfile* -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG . || docker build -f scripts/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG . || docker build -f scripts/dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        fi
