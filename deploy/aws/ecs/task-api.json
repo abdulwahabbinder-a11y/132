@@ -1,0 +1,58 @@
+{
+  "family": "docuforge-api",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "2048",
+  "executionRoleArn": "__EXECUTION_ROLE_ARN__",
+  "taskRoleArn": "__TASK_ROLE_ARN__",
+  "containerDefinitions": [
+    {
+      "name": "api",
+      "image": "__BACKEND_IMAGE__",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        { "name": "PORT", "value": "8080" },
+        { "name": "FRONTEND_URL", "value": "__FRONTEND_URL__" },
+        { "name": "CORS_ORIGINS", "value": "__CORS_ORIGINS__" },
+        { "name": "ASSET_STORAGE_PATH", "value": "/tmp/docuforge/assets" },
+        { "name": "OUTPUT_STORAGE_PATH", "value": "/tmp/docuforge/output" }
+      ],
+      "secrets": [
+        { "name": "SUPABASE_URL", "valueFrom": "__SECRET_ARN_PREFIX__:supabase-url::" },
+        { "name": "SUPABASE_SERVICE_KEY", "valueFrom": "__SECRET_ARN_PREFIX__:supabase-service-key::" },
+        { "name": "SUPABASE_JWT_SECRET", "valueFrom": "__SECRET_ARN_PREFIX__:supabase-jwt::" },
+        { "name": "REDIS_URL", "valueFrom": "__SECRET_ARN_PREFIX__:redis-url::" },
+        { "name": "STRIPE_SECRET_KEY", "valueFrom": "__SECRET_ARN_PREFIX__:stripe-secret::" },
+        { "name": "STRIPE_WEBHOOK_SECRET", "valueFrom": "__SECRET_ARN_PREFIX__:stripe-webhook::" },
+        { "name": "STRIPE_PRO_PRICE_ID", "valueFrom": "__SECRET_ARN_PREFIX__:stripe-price::" },
+        { "name": "NVIDIA_NIM_API_KEY", "valueFrom": "__SECRET_ARN_PREFIX__:nvidia-nim::" },
+        { "name": "ELEVENLABS_API_KEY", "valueFrom": "__SECRET_ARN_PREFIX__:elevenlabs::" },
+        { "name": "CLAUDE_API_KEY", "valueFrom": "__SECRET_ARN_PREFIX__:claude::" },
+        { "name": "TAVILY_API_KEY", "valueFrom": "__SECRET_ARN_PREFIX__:tavily::" },
+        { "name": "JINA_API_KEY", "valueFrom": "__SECRET_ARN_PREFIX__:jina::" }
+      ],
+      "healthCheck": {
+        "command": ["CMD-SHELL", "curl -f http://127.0.0.1:8080/api/health || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 30
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/docuforge-api",
+          "awslogs-region": "__AWS_REGION__",
+          "awslogs-stream-prefix": "api"
+        }
+      }
+    }
+  ]
+}

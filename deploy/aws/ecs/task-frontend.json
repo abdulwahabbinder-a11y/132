@@ -1,0 +1,41 @@
+{
+  "family": "docuforge-frontend",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "__EXECUTION_ROLE_ARN__",
+  "taskRoleArn": "__TASK_ROLE_ARN__",
+  "containerDefinitions": [
+    {
+      "name": "frontend",
+      "image": "__FRONTEND_IMAGE__",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        { "name": "PORT", "value": "8080" },
+        { "name": "HOSTNAME", "value": "0.0.0.0" }
+      ],
+      "healthCheck": {
+        "command": ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/ || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 20
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/docuforge-frontend",
+          "awslogs-region": "__AWS_REGION__",
+          "awslogs-stream-prefix": "frontend"
+        }
+      }
+    }
+  ]
+}

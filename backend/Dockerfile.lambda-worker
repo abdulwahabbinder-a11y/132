@@ -1,0 +1,36 @@
+# Lambda worker image — FFmpeg + Remotion for on-demand video rendering
+FROM public.ecr.aws/lambda/python:3.11
+
+# Static FFmpeg binaries (not available in default AL2 yum repos)
+RUN yum install -y tar xz curl \
+    && mkdir -p /tmp/ffmpeg \
+    && curl -fsSL https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz \
+       -o /tmp/ffmpeg/ffmpeg.tar.xz \
+    && tar -xJf /tmp/ffmpeg/ffmpeg.tar.xz -C /tmp/ffmpeg \
+    && mv /tmp/ffmpeg/ffmpeg-*-amd64-static/ffmpeg /usr/local/bin/ffmpeg \
+    && mv /tmp/ffmpeg/ffmpeg-*-amd64-static/ffprobe /usr/local/bin/ffprobe \
+    && chmod +x /usr/local/bin/ffmpeg /usr/local/bin/ffprobe \
+    && rm -rf /tmp/ffmpeg \
+    && curl -fsSL https://rpm.nodesource.com/setup_20.x | bash - \
+    && yum install -y nodejs \
+    && yum install -y \
+        atk at-spi2-atk cups-libs libdrm libXcomposite libXdamage libXrandr \
+        mesa-libgbm pango alsa-lib nss nspr libXext libX11 libXfixes \
+    && yum clean all
+
+COPY backend/requirements.txt ${LAMBDA_TASK_ROOT}/requirements.txt
+RUN pip install --no-cache-dir -r ${LAMBDA_TASK_ROOT}/requirements.txt boto3
+
+COPY backend/app ${LAMBDA_TASK_ROOT}/app
+COPY remotion/ ${LAMBDA_TASK_ROOT}/remotion/
+
+RUN cd ${LAMBDA_TASK_ROOT}/remotion \
+    && npm ci --omit=dev \
+    && mkdir -p public/jobs
+
+ENV REMOTION_PROJECT_DIR=${LAMBDA_TASK_ROOT}/remotion \
+    ASSET_STORAGE_PATH=/tmp/docuforge/assets \
+    OUTPUT_STORAGE_PATH=/tmp/docuforge/output \
+    PYTHONPATH=${LAMBDA_TASK_ROOT}
+
+CMD ["app.lambda_worker.handler"]

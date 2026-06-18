@@ -1,0 +1,25 @@
+{
+  "name": "docuforge-remotion",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "remotion studio",
+    "build": "remotion bundle",
+    "render": "remotion render src/index.ts DocumentaryComposition out/video.mp4"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.242",
+    "@remotion/player": "4.0.242",
+    "framer-motion": "^11.15.0",
+    "leaflet": "^1.9.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-leaflet": "^4.2.1",
+    "remotion": "4.0.242"
+  },
+  "devDependencies": {
+    "@types/leaflet": "^1.9.15",
+    "@types/react": "^18.3.18",
+    "typescript": "^5.7.2"
+  }
+}
