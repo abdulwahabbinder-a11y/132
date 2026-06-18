@@ -28,7 +28,7 @@ jobs:
         ECR_REPOSITORY: docuforge/docuforge-serverless/api
         IMAGE_TAG: latest
       run: |
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./backend
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG backend
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
     - name: Build, tag, and push Worker Image
@@ -37,5 +37,5 @@ jobs:
         ECR_REPOSITORY: docuforge/docuforge-serverless/worker
         IMAGE_TAG: latest
       run: |
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./deploy
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG deploy
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
