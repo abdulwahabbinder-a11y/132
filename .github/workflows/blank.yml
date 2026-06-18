@@ -37,5 +37,13 @@ jobs:
         ECR_REPOSITORY: docuforge/docuforge-serverless/worker
         IMAGE_TAG: latest
       run: |
-        docker build -f deploy/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        # Agar file deploy folder me lowercase 'dockerfile' naam se hai to usko use karega
+        if [ -f "deploy/dockerfile" ]; then
+          docker build -f deploy/dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        elif [ -f "deploy/Dockerfile" ]; then
+          docker build -f deploy/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        else
+          # Agar file root level par ya kisi aur naam se hai to default check
+          docker build -f Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        fi
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
