@@ -31,24 +31,21 @@ jobs:
         docker build -f backend/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-    - name: Build, tag, and push Worker Image (Try Deploy Folder)
-      continue-on-error: true
+    - name: Build, tag, and push Worker Image
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         ECR_REPOSITORY: docuforge/docuforge-serverless/worker
         IMAGE_TAG: latest
       run: |
-        docker build -f deploy/dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG . || docker build -f deploy/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-
-    - name: Build, tag, and push Worker Image (Fallback to Scripts Folder)
-      if: ${{ failure() || success() }}
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: docuforge/docuforge-serverless/worker
-        IMAGE_TAG: latest
-      run: |
-        if [ -f "scripts/Dockerfile" ] || [ -f "scripts/dockerfile" ]; then
-          docker build -f scripts/*ectorfile* -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG . || docker build -f scripts/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG . || docker build -f scripts/dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        # Pure project me automatic dhoondega ke worker ya dusri Dockerfile kahan hai
+        if [ -f "backend/Dockerfile.worker" ]; then
+          docker build -f backend/Dockerfile.worker -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        elif [ -f "backend/worker.Dockerfile" ]; then
+          docker build -f backend/worker.Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        elif [ -f "Dockerfile" ]; then
+          docker build -f Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        else
+          # Agar alag file nahi hai to backend/Dockerfile ko hi worker image ke liye use karega (Kyunke monolithic backend me dono same file se chalte hain)
+          docker build -f backend/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         fi
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
