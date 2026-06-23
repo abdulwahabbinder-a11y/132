@@ -287,7 +287,6 @@ Resources:
       Timeout: 900
       EphemeralStorage:
         Size: 10240
-      ReservedConcurrentExecutions: 10
       Environment:
         Variables:
           JOB_QUEUE_MODE: sqs
