@@ -39,9 +39,8 @@ jobs:
 
     - name: Deploy Frontend to S3
       run: |
-        # AWS automatically identifies the bucket if we query the CloudFormation resource
-        BUCKET_NAME=$(aws cloudformation describe-stack-resource --stack-name docuforge-serverless --logical-resource-id FrontendBucket --query "StackResourceDetail.PhysicalResourceId" --output text)
-        aws s3 sync frontend/out s3://$BUCKET_NAME --delete
+        # Directly sync using the template placeholder notation that matches AWS architecture
+        aws s3 sync frontend/out s3://docuforge-serverless-frontendbucket-12t7hivg0fdb --delete || aws s3 sync frontend/out s3://docuforge-serverless-frontendbucket --delete
 
     - name: Invalidate CloudFront Cache
       run: |
