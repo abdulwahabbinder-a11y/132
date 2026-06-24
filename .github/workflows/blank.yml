@@ -30,9 +30,7 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
 
-    - name: Debug and Deploy
+    - name: Upload to S3
       run: |
-        echo "Listing available buckets to verify name..."
-        aws s3 ls
-        echo "Attempting to sync to your bucket..."
-        aws s3 sync frontend/out s3://docuforge-serverless-frontendbucket-12t7hivg0fdb --delete
+        # Hum 'out' folder ke andar ki files ko sync kar rahe hain
+        aws s3 sync frontend/out/ s3://docuforge-serverless-frontendbucket-12t7hivg0fdb/ --region us-east-1 --delete
