@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "export",
+  output: "export", // Yeh lazmi 'export' hona chahiye taake 'out' folder bane!
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "**.supabase.co" },
