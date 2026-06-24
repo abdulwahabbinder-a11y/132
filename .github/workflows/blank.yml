@@ -1,15 +1,34 @@
-name: Deploy to AWS ECR
+name: Deploy Frontend to AWS S3
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/**'
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
-    - name: Checkout Code
+    - name: Checkout Repository
       uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+
+    - name: Install Dependencies & Build
+      run: |
+        cd frontend
+        npm install
+        npm run build
+      env:
+        NEXT_PUBLIC_API_URL: https://fxfken83p0.execute-api.us-east-1.amazonaws.com
+        NEXT_PUBLIC_SITE_URL: https://docuforge.pro
 
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v2
@@ -18,34 +37,10 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
 
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v1
-
-    - name: Build, tag, and push API Image
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: docuforge/docuforge-serverless/api
-        IMAGE_TAG: latest
+    - name: Upload to S3 Bucket
       run: |
-        docker build -f backend/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        aws s3 sync frontend/out s3://docuforge-serverless-frontendbucket-12t7hivg0fdb --delete
 
-    - name: Build, tag, and push Worker Image
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: docuforge/docuforge-serverless/worker
-        IMAGE_TAG: latest
+    - name: Invalidate CloudFront Cache
       run: |
-        # Pure project me automatic dhoondega ke worker ya dusri Dockerfile kahan hai
-        if [ -f "backend/Dockerfile.worker" ]; then
-          docker build -f backend/Dockerfile.worker -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        elif [ -f "backend/worker.Dockerfile" ]; then
-          docker build -f backend/worker.Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        elif [ -f "Dockerfile" ]; then
-          docker build -f Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        else
-          # Agar alag file nahi hai to backend/Dockerfile ko hi worker image ke liye use karega (Kyunke monolithic backend me dono same file se chalte hain)
-          docker build -f backend/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        fi
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
