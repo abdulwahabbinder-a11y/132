@@ -39,7 +39,8 @@ jobs:
 
     - name: Deploy Frontend to S3
       run: |
-        echo "Syncing frontend static build to the exact S3 bucket..."
+        echo "Syncing static files..."
+        # static export check karne ke liye hum frontend/out folder sync karenge
         aws s3 sync frontend/out s3://docuforge-serverless-frontendbucket-12t7hivg0fdb --delete
 
     - name: Invalidate CloudFront Cache
