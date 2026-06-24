@@ -39,8 +39,19 @@ jobs:
 
     - name: Deploy Frontend to S3
       run: |
-        # Directly sync using the template placeholder notation that matches AWS architecture
-        aws s3 sync frontend/out s3://docuforge-serverless-frontendbucket-12t7hivg0fdb --delete || aws s3 sync frontend/out s3://docuforge-serverless-frontendbucket --delete
+        # List all buckets and automatically filter the one containing 'frontendbucket'
+        echo "Finding your exact deployment bucket..."
+        BUCKET_NAME=$(aws s3api list-buckets --query "Buckets[?contains(Name, 'frontendbucket')].Name" --output text)
+        
+        if [ -z "$BUCKET_NAME" ] || [ "$BUCKET_NAME" == "None" ]; then
+          echo "Fallback search: checking for any docuforge bucket"
+          BUCKET_NAME=$(aws s3api list-buckets --query "Buckets[?contains(Name, 'docuforge') && contains(Name, 'frontend')].Name" --output text)
+        fi
+        
+        echo "Target Bucket Found: $BUCKET_NAME"
+        
+        # Perform the sync operation
+        aws s3 sync frontend/out s3://$BUCKET_NAME --delete
 
     - name: Invalidate CloudFront Cache
       run: |
