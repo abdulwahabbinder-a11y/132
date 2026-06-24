@@ -37,9 +37,11 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
 
-    - name: Upload to S3 Bucket
+    - name: Deploy Frontend to S3
       run: |
-        aws s3 sync frontend/out s3://docuforge-serverless-frontendbucket-12t7hivg0fdb --delete
+        # AWS automatically identifies the bucket if we query the CloudFormation resource
+        BUCKET_NAME=$(aws cloudformation describe-stack-resource --stack-name docuforge-serverless --logical-resource-id FrontendBucket --query "StackResourceDetail.PhysicalResourceId" --output text)
+        aws s3 sync frontend/out s3://$BUCKET_NAME --delete
 
     - name: Invalidate CloudFront Cache
       run: |
