@@ -30,7 +30,7 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
 
-    - name: Upload to S3
+    - name: Final Upload Attempt
       run: |
-        # Hum 'out' folder ke andar ki files ko sync kar rahe hain
-        aws s3 sync frontend/out/ s3://docuforge-serverless-frontendbucket-12t7hivg0fdb/ --region us-east-1 --delete
+        # Hum bucket ke region ko explicitly force kar rahe hain
+        aws s3 cp frontend/out/ s3://docuforge-serverless-frontendbucket-12t7hivg0fdb/ --recursive --region us-east-1
