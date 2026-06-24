@@ -30,7 +30,7 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
 
-    - name: Final Upload Attempt
+    - name: Upload to S3
       run: |
-        # Hum bucket ke region ko explicitly force kar rahe hain
-        aws s3 cp frontend/out/ s3://docuforge-serverless-frontendbucket-12t7hivg0fdb/ --recursive --region us-east-1
+        # Sahi spelling ke sath (L for Lion)
+        aws s3 cp frontend/out/ s3://docuforge-serverless-frontendbucket-l2t7hivg0fdb/ --recursive --region us-east-1
